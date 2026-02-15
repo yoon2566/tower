@@ -1,0 +1,5 @@
+{
+  "name": "tower_test",
+  "description": "Gemini가 지원하는 아이소매트릭 타워 디펜스 게임입니다. 전략적인 타워 배치로 적들을 막아내세요.",
+  "requestFramePermissions": []
+}
