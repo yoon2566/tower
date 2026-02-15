@@ -446,7 +446,7 @@ const GameCanvas: React.FC = () => {
 
     const render = (ctx: CanvasRenderingContext2D) => {
       ctx.setTransform(1, 0, 0, 1, 0, 0);
-      ctx.fillStyle = '#0f172a';
+      ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       const pivotX = canvas.width / 2;
       const pivotY = canvas.height / 2;
@@ -836,7 +836,7 @@ const GameCanvas: React.FC = () => {
   }
 
   return (
-    <div className="relative w-full h-screen bg-slate-900 overflow-hidden touch-none">
+    <div className="relative w-full h-screen bg-white overflow-hidden touch-none">
       <canvas 
         ref={canvasRef} width={window.innerWidth} height={window.innerHeight}
         onMouseMove={(e) => { const p = calculateGridPos(e.clientX, e.clientY); mouseRef.current = p; }}
