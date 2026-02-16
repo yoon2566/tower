@@ -204,7 +204,7 @@ const GameUI: React.FC<GameUIProps> = ({
   return (
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between overflow-hidden">
       {/* Top Bar */}
-      <div className="flex flex-wrap items-center pointer-events-auto p-2 md:p-4 gap-2 absolute top-0 left-0 z-50">
+      <div className="flex flex-wrap items-center pointer-events-auto p-2 md:p-4 gap-2 absolute top-0 left-0 right-16 md:right-0 z-50">
             <div className="bg-slate-900/80 backdrop-blur-md p-2 md:p-3 rounded-xl border border-slate-700 text-white shadow-lg flex gap-3 items-center h-10 md:h-12">
                 <div className="flex items-center gap-1 md:gap-2">
                     <Heart className="text-red-500 fill-red-500" size={16} />
