@@ -334,7 +334,7 @@ const GameUI: React.FC<GameUIProps> = ({
       {!isPlaying && !isGameOver && !isAutoStart && (
         <div className="absolute bottom-56 md:bottom-32 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40">
             <button onClick={onNextWave} className="group flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 border-2 border-emerald-400">
-                <span className="text-xs md:text-sm">다음 단계</span>
+                <span className="text-xs md:text-sm">시작하기!</span>
                 <ArrowRightCircle size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
         </div>
