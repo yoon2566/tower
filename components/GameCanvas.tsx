@@ -582,6 +582,39 @@ const GameCanvas: React.FC = () => {
         }
       }
 
+      // Shield tower connection lines
+      const shieldRange = TOWER_STATS[TowerType.SHIELD].range;
+      towersRef.current.forEach(st => {
+        if (st.type !== TowerType.SHIELD || st.isBroken) return;
+        const sPos = toIso(st.x, st.y);
+        const sH = 45 + (st.level * 6);
+        towersRef.current.forEach(pt => {
+          if (pt.id === st.id || pt.isBroken) return;
+          const dist = Math.sqrt((st.x - pt.x) ** 2 + (st.y - pt.y) ** 2);
+          if (dist > shieldRange) return;
+          const pPos = toIso(pt.x, pt.y);
+          const pH = 45 + (pt.level * 6);
+          const pulse = 0.3 + 0.15 * Math.sin(Date.now() / 600 + st.x * 3 + pt.y * 5);
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(sPos.x, sPos.y - sH / 2);
+          ctx.lineTo(pPos.x, pPos.y - pH / 2);
+          ctx.strokeStyle = `rgba(148, 163, 184, ${pulse})`;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 6]);
+          ctx.stroke();
+          // glow
+          ctx.beginPath();
+          ctx.moveTo(sPos.x, sPos.y - sH / 2);
+          ctx.lineTo(pPos.x, pPos.y - pH / 2);
+          ctx.strokeStyle = `rgba(148, 163, 184, ${pulse * 0.5})`;
+          ctx.lineWidth = 6;
+          ctx.setLineDash([8, 6]);
+          ctx.stroke();
+          ctx.restore();
+        });
+      });
+
       const renderables: any[] = [];
       towersRef.current.forEach(t => renderables.push({ type: 'TOWER', z: t.x + t.y, obj: t }));
       enemiesRef.current.forEach(e => renderables.push({ type: 'ENEMY', z: e.x + e.y, obj: e }));
