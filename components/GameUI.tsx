@@ -286,7 +286,7 @@ const GameUI: React.FC<GameUIProps> = ({
       )}
 
       {/* Pan & Zoom Controls */}
-      <div className="absolute left-2 md:left-auto md:right-4 bottom-40 md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex flex-col items-center gap-0.5 md:gap-1 pointer-events-auto opacity-60 hover:opacity-100 z-40 transition-opacity">
+      <div className="absolute left-2 md:left-auto md:right-4 bottom-56 md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex flex-col items-center gap-0.5 md:gap-1 pointer-events-auto opacity-60 hover:opacity-100 z-40 transition-opacity">
         <button onClick={() => onPan(0, 50)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowUp size={16} className="md:hidden" /><ArrowUp size={24} className="hidden md:block" /></button>
         <div className="flex gap-2 md:gap-4">
             <button onClick={() => onPan(50, 0)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowLeft size={16} className="md:hidden" /><ArrowLeft size={24} className="hidden md:block" /></button>
@@ -295,7 +295,7 @@ const GameUI: React.FC<GameUIProps> = ({
         <button onClick={() => onPan(0, -50)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowDown size={16} className="md:hidden" /><ArrowDown size={24} className="hidden md:block" /></button>
       </div>
 
-      <div className="absolute right-2 md:right-4 bottom-40 md:bottom-36 flex flex-col gap-2 pointer-events-auto z-40">
+      <div className="absolute right-2 md:right-4 bottom-56 md:bottom-36 flex flex-col gap-2 pointer-events-auto z-40">
         <div className="flex flex-col bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-700 overflow-hidden shadow-lg items-center w-9 md:w-12">
             <button onClick={onZoomIn} className="w-full p-1.5 md:p-3 hover:bg-slate-700 text-white border-b border-slate-600 active:bg-slate-600 flex items-center justify-center"><ZoomIn size={14} className="md:hidden" /><ZoomIn size={16} className="hidden md:block" /></button>
             <div className="w-full py-0.5 md:py-1 text-[9px] md:text-xs font-mono flex items-center justify-center text-slate-300 bg-slate-800/50">{Math.round(zoom * 100)}%</div>
@@ -332,7 +332,7 @@ const GameUI: React.FC<GameUIProps> = ({
 
       {/* Compact Next Wave Button */}
       {!isPlaying && !isGameOver && !isAutoStart && (
-        <div className="absolute bottom-40 md:bottom-32 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40">
+        <div className="absolute bottom-56 md:bottom-32 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40">
             <button onClick={onNextWave} className="group flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 border-2 border-emerald-400">
                 <span className="text-xs md:text-sm">다음 단계</span>
                 <ArrowRightCircle size={18} className="group-hover:translate-x-1 transition-transform" />
