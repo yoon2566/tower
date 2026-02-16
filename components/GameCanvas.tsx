@@ -35,7 +35,8 @@ const GameCanvas: React.FC = () => {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [hoveredTowerInfo, setHoveredTowerInfo] = useState<{ tower: Tower, x: number, y: number } | null>(null);
   const [selectedPlacedTower, setSelectedPlacedTower] = useState<{ tower: Tower, x: number, y: number } | null>(null);
-  const [skillTargetTower, setSkillTargetTower] = useState<Tower | null>(null); 
+  const [skillTargetTower, setSkillTargetTower] = useState<Tower | null>(null);
+  const [pendingPlacement, setPendingPlacement] = useState<{ gridX: number, gridY: number } | null>(null);
 
   const mouseRef = useRef({ x: 0, y: 0, gridX: -1, gridY: -1, rawX: 0, rawY: 0 });
 
@@ -159,6 +160,39 @@ const GameCanvas: React.FC = () => {
           setSelectedSkill(null);
       }
   };
+
+  const confirmPlacement = useCallback(() => {
+      if (!selectedTower || !pendingPlacement) return;
+      const { gridX, gridY } = pendingPlacement;
+      const cost = TOWER_COSTS[selectedTower];
+      if (gameStateRef.current.money >= cost && !isOnPath(gridX, gridY) && !towersRef.current.some(t => t.x === gridX && t.y === gridY)) {
+          gameStateRef.current.money -= cost;
+          const stats = TOWER_STATS[selectedTower];
+          towersRef.current.push({
+              id: Math.random().toString(),
+              x: gridX, y: gridY,
+              type: selectedTower,
+              range: stats.range,
+              damage: stats.damage,
+              cooldown: stats.cooldown,
+              lastShotTime: 0,
+              level: 1,
+              health: stats.health,
+              maxHealth: stats.health,
+              totalEarned: selectedTower === TowerType.SHIELD ? 0 : undefined,
+              skills: []
+          });
+          setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
+          setPendingPlacement(null);
+          if (gameStateRef.current.money < cost) {
+              setSelectedTower(null);
+          }
+      }
+  }, [selectedTower, pendingPlacement]);
+
+  const cancelPlacement = useCallback(() => {
+      setPendingPlacement(null);
+  }, []);
 
   const getWorldPos = (gx: number, gy: number) => {
     const offsetX = window.innerWidth / 2;
@@ -530,13 +564,30 @@ const GameCanvas: React.FC = () => {
           ctx.globalAlpha = 1.0;
       });
 
-      // Building Preview
-      if (selectedTower && mouseRef.current.gridX >= 0 && mouseRef.current.gridX < MAP_SIZE && mouseRef.current.gridY >= 0 && mouseRef.current.gridY < MAP_SIZE) {
+      // Pending Placement Preview (confirmed position)
+      if (selectedTower && pendingPlacement) {
+         const gx = pendingPlacement.gridX; const gy = pendingPlacement.gridY;
+         const pos = toIso(gx, gy);
+         ctx.globalAlpha = 0.8;
+         drawTower(ctx, pos.x, pos.y, { type: selectedTower, level: 1, health: 100, maxHealth: 100, skills: [] } as any);
+         ctx.globalAlpha = 1.0;
+         // Range circle
+         ctx.beginPath();
+         const range = TOWER_STATS[selectedTower].range;
+         ctx.ellipse(pos.x, pos.y, range * TILE_WIDTH/1.5, range * TILE_HEIGHT/1.5, 0, 0, Math.PI*2);
+         ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+         ctx.fill();
+         ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+         ctx.lineWidth = 2;
+         ctx.stroke();
+      }
+      // Mouse hover preview (when no pending placement)
+      else if (selectedTower && !pendingPlacement && mouseRef.current.gridX >= 0 && mouseRef.current.gridX < MAP_SIZE && mouseRef.current.gridY >= 0 && mouseRef.current.gridY < MAP_SIZE) {
          const gx = mouseRef.current.gridX; const gy = mouseRef.current.gridY;
          const isValid = !towersRef.current.some(t => t.x === gx && t.y === gy) && !isOnPath(gx, gy);
          const pos = toIso(gx, gy);
-         ctx.globalAlpha = 0.5;
-         drawTower(ctx, pos.x, pos.y, { type: selectedTower, level: 1, health: 100, maxHealth: 100, skills: [] } as any); 
+         ctx.globalAlpha = 0.4;
+         drawTower(ctx, pos.x, pos.y, { type: selectedTower, level: 1, health: 100, maxHealth: 100, skills: [] } as any);
          ctx.beginPath();
          const range = TOWER_STATS[selectedTower].range;
          ctx.ellipse(pos.x, pos.y, range * TILE_WIDTH/1.5, range * TILE_HEIGHT/1.5, 0, 0, Math.PI*2);
@@ -677,7 +728,7 @@ const GameCanvas: React.FC = () => {
 
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [selectedTower, zoom, pan, selectedPlacedTower, skillTargetTower, selectedSkill]);
+  }, [selectedTower, zoom, pan, selectedPlacedTower, skillTargetTower, selectedSkill, pendingPlacement]);
 
   const calculateGridPos = (clientX: number, clientY: number) => {
      const rect = canvasRef.current?.getBoundingClientRect();
@@ -730,34 +781,19 @@ const GameCanvas: React.FC = () => {
         const isValidTile = gridX >= 0 && gridX < MAP_SIZE && gridY >= 0 && gridY < MAP_SIZE;
         if (gameStateRef.current.money < TOWER_COSTS[selectedTower]) {
             setSelectedTower(null);
+            setPendingPlacement(null);
             return;
         }
 
         if (isValidTile && !isOnPath(gridX, gridY) && !towersRef.current.some(t => t.x === gridX && t.y === gridY)) {
-            const cost = TOWER_COSTS[selectedTower];
-            if (gameStateRef.current.money >= cost) {
-                gameStateRef.current.money -= cost;
-                const stats = TOWER_STATS[selectedTower];
-                towersRef.current.push({
-                    id: Math.random().toString(),
-                    x: gridX, y: gridY,
-                    type: selectedTower,
-                    range: stats.range,
-                    damage: stats.damage,
-                    cooldown: stats.cooldown,
-                    lastShotTime: 0,
-                    level: 1,
-                    health: stats.health,
-                    maxHealth: stats.health,
-                    totalEarned: selectedTower === TowerType.SHIELD ? 0 : undefined,
-                    skills: []
-                });
-                setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
-                
-                if (gameStateRef.current.money < cost) {
-                    setSelectedTower(null);
-                }
+            // 2-step: first click sets pending, second click on same tile confirms
+            if (pendingPlacement && pendingPlacement.gridX === gridX && pendingPlacement.gridY === gridY) {
+                confirmPlacement();
+            } else {
+                setPendingPlacement({ gridX, gridY });
             }
+        } else {
+            setPendingPlacement(null);
         }
         return;
      }
@@ -837,15 +873,35 @@ const GameCanvas: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen bg-white overflow-hidden touch-none">
-      <canvas 
+      <canvas
         ref={canvasRef} width={window.innerWidth} height={window.innerHeight}
         onMouseMove={(e) => { const p = calculateGridPos(e.clientX, e.clientY); mouseRef.current = p; }}
         onClick={handleCanvasClick} className="cursor-crosshair touch-none"
       />
+      {/* Confirm/Cancel placement buttons */}
+      {selectedTower && pendingPlacement && (() => {
+          const sp = getScreenPos(pendingPlacement.gridX, pendingPlacement.gridY);
+          return (
+            <div className="absolute z-[55] pointer-events-auto flex gap-2" style={{ left: sp.x, top: sp.y - 70 * zoom, transform: 'translate(-50%, -50%)' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); confirmPlacement(); }}
+                className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg border-2 border-emerald-300 flex items-center justify-center active:scale-90 transition-all animate-bounce"
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); cancelPlacement(); }}
+                className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg border-2 border-slate-500 flex items-center justify-center active:scale-90 transition-all"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          );
+      })()}
       <GameUI 
         money={uiState.money} lives={uiState.lives} wave={uiState.wave}
         isPlaying={uiState.isPlaying} isPaused={uiState.isPaused} isGameOver={uiState.isGameOver}
-        selectedTower={selectedTower} onSelectTower={setSelectedTower}
+        selectedTower={selectedTower} onSelectTower={(t) => { setSelectedTower(t); setPendingPlacement(null); }}
         onNextWave={startWave} onRestart={() => window.location.reload()}
         onTogglePause={() => { gameStateRef.current.isPaused = !gameStateRef.current.isPaused; setUiState({...gameStateRef.current}); }}
         hoveredTowerInfo={hoveredTowerInfo} gameSpeed={uiState.gameSpeed}
@@ -863,11 +919,12 @@ const GameCanvas: React.FC = () => {
         isAutoStart={uiState.isAutoStart}
         onToggleAutoStart={toggleAutoStart}
         selectedSkill={selectedSkill}
-        onSelectSkill={(skill) => { 
-            setSelectedSkill(skill); 
-            setSelectedTower(null); 
-            setSelectedPlacedTower(null); 
-            setSkillTargetTower(null); 
+        onSelectSkill={(skill) => {
+            setSelectedSkill(skill);
+            setSelectedTower(null);
+            setSelectedPlacedTower(null);
+            setSkillTargetTower(null);
+            setPendingPlacement(null);
         }}
         skillTargetTower={skillTargetTower}
         onApplySkill={applySkill}
