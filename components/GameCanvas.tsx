@@ -242,11 +242,11 @@ const GameCanvas: React.FC = () => {
             const dist = Math.sqrt((enemy.x - tower.x) ** 2 + (enemy.y - tower.y) ** 2);
             if (dist < 1.8) { 
                 // Shield check: Check if any ACTIVE Shield tower is nearby (range 1.8 approx for 1 tile diagonal)
-                const isProtected = towersRef.current.some(t => 
-                    t.type === TowerType.SHIELD && 
-                    !t.isBroken && 
+                const isProtected = towersRef.current.some(t =>
+                    t.type === TowerType.SHIELD &&
+                    !t.isBroken &&
                     t.id !== tower.id && // Shield can't protect itself from damage (it has high HP instead)
-                    Math.sqrt((t.x - tower.x)**2 + (t.y - tower.y)**2) <= 1.8
+                    Math.sqrt((t.x - tower.x)**2 + (t.y - tower.y)**2) <= 2.5
                 );
 
                 if (!isProtected || tower.type === TowerType.SHIELD) {
@@ -339,14 +339,14 @@ const GameCanvas: React.FC = () => {
                 if (SLOW_TOWERS.includes(tower.type)) {
                     const hpPercent = target.health / target.maxHealth;
 
-                    // Sniper Update: 80% Instant Death if < 50%, 20% Crit otherwise
+                    // Sniper Update: 40% Instant Death if < 50%, 20% Crit otherwise
                     if (tower.type === TowerType.SNIPER) {
                         if (hpPercent < 0.5) {
-                             if (Math.random() < 0.8) {
-                                effectType = 'instant_death'; // 80% Execute
+                             if (Math.random() < 0.4) {
+                                effectType = 'instant_death'; // 40% Execute
                                 damage = 999999;
                              } else {
-                                damage *= 1.5; // Failed execute dmg
+                                damage *= 3.0; // Failed execute dmg (3배)
                              }
                         } else if (Math.random() < 0.2) {
                             effectType = 'crit';
@@ -359,17 +359,17 @@ const GameCanvas: React.FC = () => {
                              damage *= 10.0; // Splash execute
                         } else if (Math.random() < 0.25) {
                              effectType = 'crit';
-                             damage *= 5.0;
+                             damage *= 3.0; // 5배 → 3배 조정
                         }
                     } 
                     else if (tower.type === TowerType.TESLA) {
                         if (hpPercent < 0.5) {
-                             damage = 999999; 
+                             damage = 999999;
                              effectType = 'instant_death';
-                             splashRadius = 0; 
+                             splashRadius = 0;
                         } else if (Math.random() < 0.25) {
                              effectType = 'crit';
-                             damage *= 10.0;
+                             damage *= 5.0; // 10배 → 5배 너프
                         }
                     }
                 }
@@ -424,7 +424,7 @@ const GameCanvas: React.FC = () => {
                     e.frozen = 120;
                 }
 
-                if (proj.hasChainsaw && Math.random() < 0.05) {
+                if (proj.hasChainsaw && Math.random() < 0.03) { // 5% → 3%
                     e.health = 0;
                     createParticles(e.x, e.y, '#ef4444', 50, '💀');
                 }
@@ -798,17 +798,17 @@ const GameCanvas: React.FC = () => {
       const start = GAME_PATH[0];
       const wave = gameStateRef.current.wave;
       
-      let hp = 110 * Math.pow(1.25, wave - 1); 
+      let hp = 110 * Math.pow(1.18, wave - 1); // 1.25 → 1.18 완화
       let speed = 0.025 + Math.min(0.155, (wave * 0.002) + Math.log(wave) * 0.005);
-      
-      let color = '#f97316'; 
-      let reward = Math.floor(12 + (wave * 1.5)); 
-      
-      if (wave % 5 === 0) { 
-          hp *= 5.0; 
-          speed *= 0.6; 
-          color = '#a855f7'; 
-          reward *= 5; 
+
+      let color = '#f97316';
+      let reward = Math.floor(15 + (wave * 2)); // 보상 상향: 12+(w*1.5) → 15+(w*2)
+
+      if (wave % 5 === 0) {
+          hp *= 4.0; // 보스 HP 5배 → 4배
+          speed *= 0.6;
+          color = '#a855f7';
+          reward *= 5;
       }
       
       enemiesRef.current.push({

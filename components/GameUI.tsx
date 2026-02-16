@@ -61,7 +61,7 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                     </div>
                     <div className="mt-2 p-1.5 bg-blue-500/10 rounded border border-blue-500/20 text-[10px] text-blue-200 leading-tight">
                         <ShieldCheck size={10} className="inline mr-1"/>
-                        주변 1칸 이내 타워를 무적 상태로 만듭니다. 본체는 막대한 체력을 가집니다.
+                        주변 2.5칸 이내 타워를 보호합니다. 본체는 막대한 체력을 가집니다.
                     </div>
                   </>
                 ) : type === TowerType.BASIC ? (
@@ -99,8 +99,8 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                              </div>
                              <div className="text-[10px] text-slate-400 pl-3.5 leading-tight">
                                 {type === TowerType.SNIPER && "2배 피해"}
-                                {type === TowerType.BOMBER && "5배 피해 (스플레시)"}
-                                {type === TowerType.TESLA && "10배 피해 (스플레시)"}
+                                {type === TowerType.BOMBER && "3배 피해 (스플레시)"}
+                                {type === TowerType.TESLA && "5배 피해 (스플레시)"}
                              </div>
                          </div>
                          <div>
@@ -108,7 +108,7 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                                 <Flame size={10}/> 처형 (HP 50%↓)
                              </div>
                              <div className="text-[10px] text-slate-400 pl-3.5 leading-tight">
-                                {type === TowerType.SNIPER && "80% 확률로 단일 대상 즉사"}
+                                {type === TowerType.SNIPER && "40% 확률로 즉사, 실패 시 3배 피해"}
                                 {type === TowerType.BOMBER && "10배 피해 (스플래시)"}
                                 {type === TowerType.TESLA && "즉사 (단일 대상)"}
                              </div>
@@ -376,7 +376,7 @@ const GameUI: React.FC<GameUIProps> = ({
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-slate-500 uppercase font-bold">범위</span>
                                     <span className="text-xs md:text-lg font-mono font-bold text-emerald-400">
-                                        주변 1칸
+                                        주변 2.5칸
                                     </span>
                                 </div>
                               </>
