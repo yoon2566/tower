@@ -243,8 +243,7 @@ const GameUI: React.FC<GameUIProps> = ({
             onClick={() => setShowShop(!showShop)}
             className={`p-2 md:p-3 rounded-xl border font-bold shadow-lg flex items-center justify-center gap-2 backdrop-blur-md transition-all active:scale-95 h-10 md:h-auto ${showShop ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900/80 text-indigo-300 border-indigo-500/50 hover:bg-slate-800'}`}
         >
-            <BookOpen size={18} />
-            <span className="hidden md:inline text-sm">특수 상점</span>
+            <span className="text-xs md:text-sm">특수 상점</span>
         </button>
 
         {showShop && (
