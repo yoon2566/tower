@@ -340,6 +340,58 @@ const GameUI: React.FC<GameUIProps> = ({
         </div>
       )}
 
+      {/* Mobile Build Tooltip */}
+      {selectedTower && !selectedPlacedTower && showMenu && (
+        <div className="md:hidden fixed bottom-[120px] left-2 right-2 z-[60] pointer-events-none animate-fade-in">
+          <div className="bg-slate-900/95 backdrop-blur-sm text-white p-3 rounded-xl border border-slate-600 shadow-2xl mx-auto max-w-xs">
+            {(() => {
+              const stat = TOWER_STATS[selectedTower];
+              const isSlow = [TowerType.SNIPER, TowerType.BOMBER, TowerType.TESLA].includes(selectedTower);
+              return (
+                <>
+                  <div className="flex items-center justify-between mb-2 border-b border-slate-700 pb-2">
+                    <h3 className="font-bold text-sm text-yellow-400">{stat.name}</h3>
+                    <span className="text-[10px] bg-slate-800 px-1.5 rounded border border-slate-700">Lv.1</span>
+                  </div>
+                  <div className="space-y-1 text-xs text-slate-300">
+                    {selectedTower === TowerType.SHIELD ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-1"><Shield size={12}/> 내구도</span>
+                          <span className="font-mono font-bold text-emerald-400">{stat.health}</span>
+                        </div>
+                        <div className="mt-2 p-1.5 bg-blue-500/10 rounded border border-blue-500/20 text-[10px] text-blue-200 leading-tight">
+                          <ShieldCheck size={10} className="inline mr-1"/>주변 2.5칸 이내 타워를 보호합니다.
+                        </div>
+                      </>
+                    ) : selectedTower === TowerType.BASIC ? (
+                      <>
+                        <div className="flex justify-between items-center text-blue-300">
+                          <span className="flex items-center gap-1 font-bold"><ShieldCheck size={12}/> 끈끈이 효과</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 leading-tight">적의 이동속도를 50% 감소 (스플래시)</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span className="flex items-center gap-1"><Swords size={12}/> 공격력</span><span className="font-mono font-bold text-white">{stat.damage}</span></div>
+                        <div className="flex justify-between"><span className="flex items-center gap-1"><Zap size={12}/> 주기</span><span className="font-mono font-bold text-white">{(stat.cooldown / 1000).toFixed(2)}s</span></div>
+                        <div className="flex justify-between"><span className="flex items-center gap-1"><Crosshair size={12}/> 사거리</span><span className="font-mono font-bold text-white">{stat.range}</span></div>
+                        {isSlow && (
+                          <div className="mt-2 space-y-1 pt-2 border-t border-slate-700">
+                            <div className="text-[10px]"><span className="text-orange-400 font-bold"><Target size={10} className="inline mr-1"/>치명타 (20%)</span> <span className="text-slate-400">{selectedTower === TowerType.SNIPER ? '2배' : selectedTower === TowerType.BOMBER ? '3배 스플' : '5배 스플'}</span></div>
+                            <div className="text-[10px]"><span className="text-red-400 font-bold"><Flame size={10} className="inline mr-1"/>처형 (HP50%↓)</span> <span className="text-slate-400">{selectedTower === TowerType.SNIPER ? '40% 즉사/실패 3배' : selectedTower === TowerType.BOMBER ? '10배 스플' : '즉사'}</span></div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
       {/* BOTTOM HUD */}
       <div className={`pointer-events-auto bg-slate-900/95 backdrop-blur-md border-t border-slate-700 p-2 md:p-3 shadow-2xl z-50 fixed bottom-0 left-0 right-0 flex justify-center transition-transform duration-300 ${showMenu ? 'translate-y-0' : 'translate-y-full'}`}>
         <button onClick={() => setShowMenu(!showMenu)} className="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900/95 text-slate-400 hover:text-white p-1 px-4 rounded-t-xl border-t border-x border-slate-700 shadow-lg">{showMenu ? <ChevronDown size={20}/> : <ChevronUp size={20}/>}</button>
