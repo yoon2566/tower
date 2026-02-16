@@ -1006,18 +1006,20 @@ const GameCanvas: React.FC = () => {
       {selectedTower && pendingPlacement && (() => {
           const sp = getScreenPos(pendingPlacement.gridX, pendingPlacement.gridY);
           return (
-            <div className="absolute z-[55] pointer-events-auto flex gap-2" style={{ left: sp.x, top: sp.y - 70 * zoom, transform: 'translate(-50%, -50%)' }}>
+            <div className="absolute z-[70] pointer-events-auto flex gap-3" style={{ left: sp.x, top: sp.y - 70 * zoom, transform: 'translate(-50%, -50%)', touchAction: 'auto' }}>
               <button
                 onClick={(e) => { e.stopPropagation(); confirmPlacement(); }}
-                className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg border-2 border-emerald-300 flex items-center justify-center active:scale-90 transition-all animate-bounce"
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); confirmPlacement(); }}
+                className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg border-2 border-emerald-300 flex items-center justify-center active:scale-90 transition-all animate-bounce"
               >
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); cancelPlacement(); }}
-                className="w-10 h-10 md:w-9 md:h-9 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg border-2 border-slate-500 flex items-center justify-center active:scale-90 transition-all"
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); cancelPlacement(); }}
+                className="w-12 h-12 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg border-2 border-slate-500 flex items-center justify-center active:scale-90 transition-all"
               >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
               </button>
             </div>
           );
@@ -1054,6 +1056,7 @@ const GameCanvas: React.FC = () => {
         onApplySkill={applySkill}
         onCancelSkill={() => { setSelectedSkill(null); setSkillTargetTower(null); }}
         onApplySkillToSelected={applySkillToSelected}
+        hasPendingPlacement={!!pendingPlacement}
       />
     </div>
   );
