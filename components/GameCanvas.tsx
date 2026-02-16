@@ -39,6 +39,67 @@ const GameCanvas: React.FC = () => {
   const [pendingPlacement, setPendingPlacement] = useState<{ gridX: number, gridY: number } | null>(null);
 
   const mouseRef = useRef({ x: 0, y: 0, gridX: -1, gridY: -1, rawX: 0, rawY: 0 });
+  const touchRef = useRef<{ lastDist: number; lastMidX: number; lastMidY: number; isTwoFinger: boolean }>({ lastDist: 0, lastMidX: 0, lastMidY: 0, isTwoFinger: false });
+
+  // Two-finger pinch zoom & pan
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const getTouchDist = (t1: Touch, t2: Touch) =>
+      Math.sqrt((t1.clientX - t2.clientX) ** 2 + (t1.clientY - t2.clientY) ** 2);
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const t1 = e.touches[0], t2 = e.touches[1];
+        touchRef.current = {
+          lastDist: getTouchDist(t1, t2),
+          lastMidX: (t1.clientX + t2.clientX) / 2,
+          lastMidY: (t1.clientY + t2.clientY) / 2,
+          isTwoFinger: true
+        };
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchRef.current.isTwoFinger) {
+        e.preventDefault();
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const dist = getTouchDist(t1, t2);
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+
+        // Pinch zoom
+        const scale = dist / touchRef.current.lastDist;
+        setZoom(z => Math.min(2, Math.max(0.4, z * scale)));
+
+        // Two-finger pan
+        const dx = midX - touchRef.current.lastMidX;
+        const dy = midY - touchRef.current.lastMidY;
+        setPan(p => ({ x: p.x + dx, y: p.y + dy }));
+
+        touchRef.current.lastDist = dist;
+        touchRef.current.lastMidX = midX;
+        touchRef.current.lastMidY = midY;
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        touchRef.current.isTwoFinger = false;
+      }
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -896,7 +957,17 @@ const GameCanvas: React.FC = () => {
       <canvas
         ref={canvasRef} width={window.innerWidth} height={window.innerHeight}
         onMouseMove={(e) => { const p = calculateGridPos(e.clientX, e.clientY); mouseRef.current = p; }}
-        onClick={handleCanvasClick} className="cursor-crosshair touch-none"
+        onClick={handleCanvasClick}
+        onTouchEnd={(e) => {
+          if (touchRef.current.isTwoFinger) return;
+          if (e.changedTouches.length === 1) {
+            const t = e.changedTouches[0];
+            const p = calculateGridPos(t.clientX, t.clientY);
+            mouseRef.current = p;
+            handleCanvasClick();
+          }
+        }}
+        className="cursor-crosshair touch-none"
       />
       {/* Confirm/Cancel placement buttons */}
       {selectedTower && pendingPlacement && (() => {
