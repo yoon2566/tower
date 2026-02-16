@@ -146,18 +146,38 @@ const GameCanvas: React.FC = () => {
       if (!skillTargetTower || !selectedSkill) return;
       const t = towersRef.current.find(tower => tower.id === skillTargetTower.id);
       if (!t) return;
+      if (t.skills.includes(selectedSkill)) return; // 중복 방지
 
       const cost = SKILL_COSTS[selectedSkill];
       if (gameStateRef.current.money >= cost) {
           gameStateRef.current.money -= cost;
-          if (!t.skills.includes(selectedSkill)) {
-              t.skills.push(selectedSkill);
-          }
+          t.skills.push(selectedSkill);
           createParticles(t.x, t.y, '#a855f7', 40);
           setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
-          
+
           setSkillTargetTower(null);
           setSelectedSkill(null);
+      }
+  };
+
+  const applySkillToSelected = (skill: TowerSkill) => {
+      if (!selectedPlacedTower) return;
+      const t = towersRef.current.find(tower => tower.id === selectedPlacedTower.tower.id);
+      if (!t) return;
+      if (t.skills.includes(skill)) return; // 중복 방지
+
+      const info = SKILL_INFO[skill];
+      if (info?.targetTypes && !info.targetTypes.includes(t.type)) return;
+
+      const cost = SKILL_COSTS[skill];
+      if (gameStateRef.current.money >= cost) {
+          gameStateRef.current.money -= cost;
+          t.skills.push(skill);
+          createParticles(t.x, t.y, '#a855f7', 40);
+          setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
+
+          const pos = getScreenPos(t.x, t.y);
+          setSelectedPlacedTower({ tower: { ...t }, x: pos.x, y: pos.y });
       }
   };
 
@@ -929,6 +949,7 @@ const GameCanvas: React.FC = () => {
         skillTargetTower={skillTargetTower}
         onApplySkill={applySkill}
         onCancelSkill={() => { setSelectedSkill(null); setSkillTargetTower(null); }}
+        onApplySkillToSelected={applySkillToSelected}
       />
     </div>
   );

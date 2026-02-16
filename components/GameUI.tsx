@@ -33,6 +33,7 @@ interface GameUIProps {
   skillTargetTower: Tower | null;
   onApplySkill: () => void;
   onCancelSkill: () => void;
+  onApplySkillToSelected: (skill: TowerSkill) => void;
 }
 
 const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: number, y: number, isBottom?: boolean }) => {
@@ -151,7 +152,8 @@ const GameUI: React.FC<GameUIProps> = ({
   onSelectSkill,
   skillTargetTower,
   onApplySkill,
-  onCancelSkill
+  onCancelSkill,
+  onApplySkillToSelected
 }) => {
   const [hoveredBuildType, setHoveredBuildType] = useState<TowerType | null>(null);
   const [hoveredButtonRect, setHoveredButtonRect] = useState<{x: number, y: number} | null>(null);
@@ -247,23 +249,48 @@ const GameUI: React.FC<GameUIProps> = ({
 
         {showShop && (
             <div className="absolute top-14 right-0 w-64 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-2xl p-3 shadow-2xl flex flex-col gap-2 animate-fade-in-down">
-                <div className="text-sm font-bold text-slate-400 mb-1 px-1">특수 스킬 구매</div>
+                <div className="text-sm font-bold text-slate-400 mb-1 px-1">
+                    {selectedPlacedTower ? `${TOWER_STATS[selectedPlacedTower.tower.type].name}에 적용` : '특수 스킬 구매'}
+                </div>
+                {selectedPlacedTower && (
+                    <div className="text-[10px] text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-2 py-1 mb-1">
+                        타워가 선택된 상태입니다. 스킬을 누르면 바로 적용됩니다.
+                    </div>
+                )}
                 {shopSkills.map(skill => {
                     const info = SKILL_INFO[skill]!;
                     const cost = SKILL_COSTS[skill];
                     const canAfford = money >= cost;
+                    const alreadyHas = selectedPlacedTower?.tower.skills.includes(skill);
+                    const wrongType = selectedPlacedTower && info.targetTypes && !info.targetTypes.includes(selectedPlacedTower.tower.type);
+                    const isDisabled = !canAfford || !!alreadyHas || !!wrongType;
                     return (
-                        <button 
+                        <button
                             key={skill}
-                            onClick={() => { onSelectSkill(skill); setShowShop(false); }}
-                            disabled={!canAfford}
-                            className={`flex flex-col text-left p-2 rounded-xl border transition-all ${canAfford ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-indigo-500' : 'bg-slate-800/50 border-slate-800 opacity-50 cursor-not-allowed'}`}
+                            onClick={() => {
+                                if (selectedPlacedTower) {
+                                    onApplySkillToSelected(skill);
+                                    setShowShop(false);
+                                } else {
+                                    onSelectSkill(skill);
+                                    setShowShop(false);
+                                }
+                            }}
+                            disabled={isDisabled}
+                            className={`flex flex-col text-left p-2 rounded-xl border transition-all ${isDisabled ? 'bg-slate-800/50 border-slate-800 opacity-50 cursor-not-allowed' : 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-indigo-500'}`}
                         >
                             <div className="flex justify-between items-center w-full">
                                 <span className="font-bold text-sm text-indigo-300">{info.name}</span>
-                                <span className={`text-xs font-bold ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}>{cost}G</span>
+                                <div className="flex items-center gap-2">
+                                    {alreadyHas && <span className="text-[10px] text-emerald-400 font-bold">적용됨</span>}
+                                    {wrongType && <span className="text-[10px] text-red-400 font-bold">불가</span>}
+                                    <span className={`text-xs font-bold ${canAfford && !alreadyHas ? 'text-yellow-400' : 'text-red-400'}`}>{cost}G</span>
+                                </div>
                             </div>
                             <span className="text-[10px] text-slate-400 mt-1">{info.desc}</span>
+                            {info.targetTypes && (
+                                <span className="text-[10px] text-slate-500 mt-0.5">대상: {info.targetTypes.map(t => TOWER_STATS[t].name).join(', ')}</span>
+                            )}
                         </button>
                     )
                 })}
@@ -271,8 +298,8 @@ const GameUI: React.FC<GameUIProps> = ({
         )}
       </div>
 
-      {/* Skill Application Overlay */}
-      {selectedSkill && (
+      {/* Skill Application Overlay (fallback: no tower selected) */}
+      {selectedSkill && !selectedPlacedTower && (
           <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-4 animate-bounce pointer-events-auto">
               <div className="flex flex-col items-center">
                 <span className="font-bold text-sm">스킬 적용 모드</span>
