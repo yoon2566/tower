@@ -236,12 +236,12 @@ const GameUI: React.FC<GameUIProps> = ({
       </div>
 
       {/* Special Shop Button */}
-      <div className="absolute top-4 right-4 pointer-events-auto z-50">
-        <button 
-            onClick={() => setShowShop(!showShop)} 
-            className={`p-3 rounded-xl border font-bold shadow-lg flex items-center justify-center gap-2 backdrop-blur-md transition-all active:scale-95 ${showShop ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900/80 text-indigo-300 border-indigo-500/50 hover:bg-slate-800'}`}
+      <div className="absolute top-2 md:top-4 right-2 md:right-4 pointer-events-auto z-50">
+        <button
+            onClick={() => setShowShop(!showShop)}
+            className={`p-2 md:p-3 rounded-xl border font-bold shadow-lg flex items-center justify-center gap-2 backdrop-blur-md transition-all active:scale-95 h-10 md:h-auto ${showShop ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900/80 text-indigo-300 border-indigo-500/50 hover:bg-slate-800'}`}
         >
-            <BookOpen size={20} />
+            <BookOpen size={18} />
             <span className="hidden md:inline text-sm">특수 상점</span>
         </button>
 
@@ -286,20 +286,20 @@ const GameUI: React.FC<GameUIProps> = ({
       )}
 
       {/* Pan & Zoom Controls */}
-      <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col items-center gap-1 pointer-events-auto opacity-60 hover:opacity-100 z-40 transition-opacity">
-        <button onClick={() => onPan(0, 50)} className="p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowUp size={24} /></button>
-        <div className="flex gap-4">
-            <button onClick={() => onPan(50, 0)} className="p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowLeft size={24} /></button>
-            <button onClick={() => onPan(-50, 0)} className="p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowRight size={24} /></button>
+      <div className="absolute left-2 md:left-auto md:right-4 bottom-56 md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex flex-col items-center gap-0.5 md:gap-1 pointer-events-auto opacity-60 hover:opacity-100 z-40 transition-opacity">
+        <button onClick={() => onPan(0, 50)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowUp size={16} className="md:hidden" /><ArrowUp size={24} className="hidden md:block" /></button>
+        <div className="flex gap-2 md:gap-4">
+            <button onClick={() => onPan(50, 0)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowLeft size={16} className="md:hidden" /><ArrowLeft size={24} className="hidden md:block" /></button>
+            <button onClick={() => onPan(-50, 0)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowRight size={16} className="md:hidden" /><ArrowRight size={24} className="hidden md:block" /></button>
         </div>
-        <button onClick={() => onPan(0, -50)} className="p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowDown size={24} /></button>
+        <button onClick={() => onPan(0, -50)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowDown size={16} className="md:hidden" /><ArrowDown size={24} className="hidden md:block" /></button>
       </div>
 
-      <div className="absolute right-4 bottom-28 md:bottom-36 flex flex-col gap-2 pointer-events-auto z-40">
-        <div className="flex flex-col bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-700 overflow-hidden shadow-lg items-center w-10 md:w-12">
-            <button onClick={onZoomIn} className="w-full p-2 md:p-3 hover:bg-slate-700 text-white border-b border-slate-600 active:bg-slate-600 flex items-center justify-center"><ZoomIn size={16} /></button>
-            <div className="w-full py-1 text-[10px] md:text-xs font-mono flex items-center justify-center text-slate-300 bg-slate-800/50">{Math.round(zoom * 100)}%</div>
-            <button onClick={onZoomOut} className="w-full p-2 md:p-3 hover:bg-slate-700 text-white active:bg-slate-600 flex items-center justify-center"><ZoomOut size={16} /></button>
+      <div className="absolute right-2 md:right-4 bottom-56 md:bottom-36 flex flex-col gap-2 pointer-events-auto z-40">
+        <div className="flex flex-col bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-700 overflow-hidden shadow-lg items-center w-9 md:w-12">
+            <button onClick={onZoomIn} className="w-full p-1.5 md:p-3 hover:bg-slate-700 text-white border-b border-slate-600 active:bg-slate-600 flex items-center justify-center"><ZoomIn size={14} className="md:hidden" /><ZoomIn size={16} className="hidden md:block" /></button>
+            <div className="w-full py-0.5 md:py-1 text-[9px] md:text-xs font-mono flex items-center justify-center text-slate-300 bg-slate-800/50">{Math.round(zoom * 100)}%</div>
+            <button onClick={onZoomOut} className="w-full p-1.5 md:p-3 hover:bg-slate-700 text-white active:bg-slate-600 flex items-center justify-center"><ZoomOut size={14} className="md:hidden" /><ZoomOut size={16} className="hidden md:block" /></button>
         </div>
       </div>
 
@@ -332,10 +332,10 @@ const GameUI: React.FC<GameUIProps> = ({
 
       {/* Compact Next Wave Button */}
       {!isPlaying && !isGameOver && !isAutoStart && (
-        <div className="absolute bottom-32 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40">
-            <button onClick={onNextWave} className="group flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 border-2 border-emerald-400">
-                <span className="text-sm">다음 단계</span>
-                <ArrowRightCircle size={20} className="group-hover:translate-x-1 transition-transform" />
+        <div className="absolute bottom-56 md:bottom-32 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40">
+            <button onClick={onNextWave} className="group flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 border-2 border-emerald-400">
+                <span className="text-xs md:text-sm">다음 단계</span>
+                <ArrowRightCircle size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
         </div>
       )}
