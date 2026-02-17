@@ -994,6 +994,7 @@ const GameCanvas: React.FC = () => {
         onTouchEnd={(e) => {
           if (touchRef.current.isTwoFinger) return;
           if (e.changedTouches.length === 1) {
+            e.preventDefault();
             const t = e.changedTouches[0];
             const p = calculateGridPos(t.clientX, t.clientY);
             mouseRef.current = p;
