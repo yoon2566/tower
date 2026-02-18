@@ -360,7 +360,7 @@ const GameUI: React.FC<GameUIProps> = ({
 
       {/* Compact Next Wave Button */}
       {!isPlaying && !isGameOver && !isAutoStart && (
-        <div className={`absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40 transition-all duration-300 ${showMenu ? 'bottom-56 md:bottom-32' : 'bottom-4 md:bottom-4'}`}>
+        <div className={`absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40 transition-all duration-300 ${showMenu ? 'bottom-72 md:bottom-40' : 'bottom-12 md:bottom-8'}`}>
             <button onClick={onNextWave} className="group flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 border-2 border-emerald-400">
                 <span className="text-xs md:text-sm">시작하기!</span>
                 <ArrowRightCircle size={18} className="group-hover:translate-x-1 transition-transform" />
