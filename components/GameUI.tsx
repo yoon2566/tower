@@ -542,15 +542,16 @@ const GameUI: React.FC<GameUIProps> = ({
                         <button
                             key={type}
                             onClick={() => {
-                                if (canAfford) onSelectTower(isSelected ? null : type);
+                                onSelectTower(isSelected ? null : type);
                             }}
                             onMouseEnter={(e) => handleBuildEnter(type, e)}
                             onMouseLeave={() => setHoveredBuildType(null)}
-                            className={`relative flex flex-col items-center justify-center p-2 rounded-xl min-w-[80px] md:min-w-[110px] transition-all border-2 ${isSelected ? 'bg-blue-600/20 border-blue-500 -translate-y-2 shadow-2xl' : 'bg-slate-800 border-slate-700 hover:border-slate-500'} ${!canAfford ? 'opacity-40 grayscale cursor-default' : 'cursor-pointer'}`}
+                            className={`relative flex flex-col items-center justify-center p-2 rounded-xl min-w-[80px] md:min-w-[110px] transition-all border-2 ${isSelected ? 'bg-blue-600/20 border-blue-500 -translate-y-2 shadow-2xl' : 'bg-slate-800 border-slate-700 hover:border-slate-500'} cursor-pointer`}
                         >
                             <div className={`p-1.5 md:p-2 rounded-lg mb-1 ${isSelected ? 'scale-110' : ''}`} style={{ backgroundColor: stat.color }}>{renderTowerIcon(type, 18)}</div>
                             <span className="text-[10px] md:text-xs font-bold text-slate-200 truncate w-full text-center">{stat.name}</span>
                             <div className={`flex items-center text-[10px] md:text-xs font-bold mt-0.5 ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}><Coins size={10} className="mr-0.5" /> {cost}</div>
+                            {!canAfford && <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center"><span className="text-[9px] text-red-300 font-bold">금액 부족</span></div>}
                         </button>
                         );
                     })}

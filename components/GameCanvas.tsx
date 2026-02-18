@@ -39,9 +39,9 @@ const GameCanvas: React.FC = () => {
   const [pendingPlacement, setPendingPlacement] = useState<{ gridX: number, gridY: number } | null>(null);
 
   const mouseRef = useRef({ x: 0, y: 0, gridX: -1, gridY: -1, rawX: 0, rawY: 0 });
-  const touchRef = useRef<{ lastDist: number; lastMidX: number; lastMidY: number; isTwoFinger: boolean }>({ lastDist: 0, lastMidX: 0, lastMidY: 0, isTwoFinger: false });
+  const touchRef = useRef<{ lastDist: number; lastMidX: number; lastMidY: number; isTwoFinger: boolean; startX: number; startY: number; lastX: number; lastY: number; isDragging: boolean }>({ lastDist: 0, lastMidX: 0, lastMidY: 0, isTwoFinger: false, startX: 0, startY: 0, lastX: 0, lastY: 0, isDragging: false });
 
-  // Two-finger pinch zoom & pan
+  // Touch: pinch zoom, two-finger pan, single-finger drag pan
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -53,12 +53,18 @@ const GameCanvas: React.FC = () => {
       if (e.touches.length === 2) {
         e.preventDefault();
         const t1 = e.touches[0], t2 = e.touches[1];
-        touchRef.current = {
-          lastDist: getTouchDist(t1, t2),
-          lastMidX: (t1.clientX + t2.clientX) / 2,
-          lastMidY: (t1.clientY + t2.clientY) / 2,
-          isTwoFinger: true
-        };
+        touchRef.current.lastDist = getTouchDist(t1, t2);
+        touchRef.current.lastMidX = (t1.clientX + t2.clientX) / 2;
+        touchRef.current.lastMidY = (t1.clientY + t2.clientY) / 2;
+        touchRef.current.isTwoFinger = true;
+        touchRef.current.isDragging = false;
+      } else if (e.touches.length === 1) {
+        const t = e.touches[0];
+        touchRef.current.startX = t.clientX;
+        touchRef.current.startY = t.clientY;
+        touchRef.current.lastX = t.clientX;
+        touchRef.current.lastY = t.clientY;
+        touchRef.current.isDragging = false;
       }
     };
 
@@ -70,11 +76,9 @@ const GameCanvas: React.FC = () => {
         const midX = (t1.clientX + t2.clientX) / 2;
         const midY = (t1.clientY + t2.clientY) / 2;
 
-        // Pinch zoom
         const scale = dist / touchRef.current.lastDist;
         setZoom(z => Math.min(2, Math.max(0.4, z * scale)));
 
-        // Two-finger pan
         const dx = midX - touchRef.current.lastMidX;
         const dy = midY - touchRef.current.lastMidY;
         setPan(p => ({ x: p.x + dx, y: p.y + dy }));
@@ -82,6 +86,19 @@ const GameCanvas: React.FC = () => {
         touchRef.current.lastDist = dist;
         touchRef.current.lastMidX = midX;
         touchRef.current.lastMidY = midY;
+      } else if (e.touches.length === 1 && !touchRef.current.isTwoFinger) {
+        const t = e.touches[0];
+        const movedX = Math.abs(t.clientX - touchRef.current.startX);
+        const movedY = Math.abs(t.clientY - touchRef.current.startY);
+        if (movedX > 8 || movedY > 8) {
+          e.preventDefault();
+          touchRef.current.isDragging = true;
+          const dx = t.clientX - touchRef.current.lastX;
+          const dy = t.clientY - touchRef.current.lastY;
+          setPan(p => ({ x: p.x + dx, y: p.y + dy }));
+        }
+        touchRef.current.lastX = t.clientX;
+        touchRef.current.lastY = t.clientY;
       }
     };
 
@@ -993,6 +1010,7 @@ const GameCanvas: React.FC = () => {
         onClick={handleCanvasClick}
         onTouchEnd={(e) => {
           if (touchRef.current.isTwoFinger) return;
+          if (touchRef.current.isDragging) { touchRef.current.isDragging = false; return; }
           if (e.changedTouches.length === 1) {
             e.preventDefault();
             const t = e.changedTouches[0];
