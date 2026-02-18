@@ -234,18 +234,18 @@ const GameUI: React.FC<GameUIProps> = ({
                 <span className="text-xs md:text-sm">AUTO</span>
             </button>
 
-            <button onClick={onTogglePause} disabled={!isPlaying || isGameOver} className="bg-slate-900/80 hover:bg-slate-700 text-white px-3 rounded-xl border border-slate-700 font-bold shadow-lg flex items-center justify-center backdrop-blur-md h-10 md:h-12 disabled:opacity-30">
-                {isPaused ? <Play size={16} className="fill-white"/> : <Pause size={16} className="fill-white"/>}
+            <button
+                onClick={() => setShowShop(!showShop)}
+                className={`px-3 rounded-xl border font-bold shadow-lg flex items-center justify-center gap-2 backdrop-blur-md transition-all active:scale-95 h-10 md:h-12 ${showShop ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900/80 text-indigo-300 border-indigo-500/50 hover:bg-slate-800'}`}
+            >
+                <span className="text-xs md:text-sm">특수 상점</span>
             </button>
       </div>
 
-      {/* Special Shop Button */}
+      {/* Play/Pause Button */}
       <div className="absolute top-2 md:top-4 right-2 md:right-4 pointer-events-auto z-50">
-        <button
-            onClick={() => setShowShop(!showShop)}
-            className={`p-2 md:p-3 rounded-xl border font-bold shadow-lg flex items-center justify-center gap-2 backdrop-blur-md transition-all active:scale-95 h-10 md:h-auto ${showShop ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900/80 text-indigo-300 border-indigo-500/50 hover:bg-slate-800'}`}
-        >
-            <span className="text-xs md:text-sm">특수 상점</span>
+        <button onClick={onTogglePause} disabled={!isPlaying || isGameOver} className="bg-slate-900/80 hover:bg-slate-700 text-white p-2 md:p-3 rounded-xl border border-slate-700 font-bold shadow-lg flex items-center justify-center backdrop-blur-md h-10 md:h-auto disabled:opacity-30">
+            {isPaused ? <Play size={16} className="fill-white"/> : <Pause size={16} className="fill-white"/>}
         </button>
 
         {showShop && (
