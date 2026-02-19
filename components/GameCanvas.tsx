@@ -778,10 +778,11 @@ const GameCanvas: React.FC = () => {
 
         // Shield Tower Aura
         if (tower.type === TowerType.SHIELD && !isBroken) {
+             const shieldRange = TOWER_STATS[TowerType.SHIELD].range;
              ctx.save();
              ctx.beginPath();
-             ctx.ellipse(x, y, TILE_WIDTH * 0.8, TILE_HEIGHT * 0.8, 0, 0, Math.PI * 2);
-             ctx.fillStyle = 'rgba(100, 116, 139, 0.2)';
+             ctx.ellipse(x, y, shieldRange * TILE_WIDTH / 1.5, shieldRange * TILE_HEIGHT / 1.5, 0, 0, Math.PI * 2);
+             ctx.fillStyle = 'rgba(100, 116, 139, 0.1)';
              ctx.fill();
              ctx.strokeStyle = '#94a3b8';
              ctx.lineWidth = 1;
