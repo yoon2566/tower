@@ -33,6 +33,8 @@ interface GameUIProps {
   skillTargetTower: Tower | null;
   onApplySkill: () => void;
   onCancelSkill: () => void;
+  onApplySkillToSelected: (skill: TowerSkill) => void;
+  hasPendingPlacement: boolean;
 }
 
 const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: number, y: number, isBottom?: boolean }) => {
@@ -61,7 +63,7 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                     </div>
                     <div className="mt-2 p-1.5 bg-blue-500/10 rounded border border-blue-500/20 text-[10px] text-blue-200 leading-tight">
                         <ShieldCheck size={10} className="inline mr-1"/>
-                        주변 1칸 이내 타워를 무적 상태로 만듭니다. 본체는 막대한 체력을 가집니다.
+                        주변 2.5칸 이내 타워를 보호합니다. 본체는 막대한 체력을 가집니다.
                     </div>
                   </>
                 ) : type === TowerType.BASIC ? (
@@ -99,8 +101,8 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                              </div>
                              <div className="text-[10px] text-slate-400 pl-3.5 leading-tight">
                                 {type === TowerType.SNIPER && "2배 피해"}
-                                {type === TowerType.BOMBER && "5배 피해 (스플레시)"}
-                                {type === TowerType.TESLA && "10배 피해 (스플레시)"}
+                                {type === TowerType.BOMBER && "3배 피해 (스플레시)"}
+                                {type === TowerType.TESLA && "5배 피해 (스플레시)"}
                              </div>
                          </div>
                          <div>
@@ -108,7 +110,7 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                                 <Flame size={10}/> 처형 (HP 50%↓)
                              </div>
                              <div className="text-[10px] text-slate-400 pl-3.5 leading-tight">
-                                {type === TowerType.SNIPER && "80% 확률로 단일 대상 즉사"}
+                                {type === TowerType.SNIPER && "40% 확률로 즉사, 실패 시 3배 피해"}
                                 {type === TowerType.BOMBER && "10배 피해 (스플래시)"}
                                 {type === TowerType.TESLA && "즉사 (단일 대상)"}
                              </div>
@@ -151,7 +153,9 @@ const GameUI: React.FC<GameUIProps> = ({
   onSelectSkill,
   skillTargetTower,
   onApplySkill,
-  onCancelSkill
+  onCancelSkill,
+  onApplySkillToSelected,
+  hasPendingPlacement
 }) => {
   const [hoveredBuildType, setHoveredBuildType] = useState<TowerType | null>(null);
   const [hoveredButtonRect, setHoveredButtonRect] = useState<{x: number, y: number} | null>(null);
@@ -230,40 +234,64 @@ const GameUI: React.FC<GameUIProps> = ({
                 <span className="text-xs md:text-sm">AUTO</span>
             </button>
 
-            <button onClick={onTogglePause} disabled={!isPlaying || isGameOver} className="bg-slate-900/80 hover:bg-slate-700 text-white px-3 rounded-xl border border-slate-700 font-bold shadow-lg flex items-center justify-center backdrop-blur-md h-10 md:h-12 disabled:opacity-30">
-                {isPaused ? <Play size={16} className="fill-white"/> : <Pause size={16} className="fill-white"/>}
+            <button
+                onClick={() => setShowShop(!showShop)}
+                className={`px-3 rounded-xl border font-bold shadow-lg flex items-center justify-center gap-2 backdrop-blur-md transition-all active:scale-95 h-10 md:h-12 ${showShop ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900/80 text-indigo-300 border-indigo-500/50 hover:bg-slate-800'}`}
+            >
+                <span className="text-xs md:text-sm">특수 상점</span>
             </button>
       </div>
 
-      {/* Special Shop Button */}
+      {/* Play/Pause Button */}
       <div className="absolute top-2 md:top-4 right-2 md:right-4 pointer-events-auto z-50">
-        <button
-            onClick={() => setShowShop(!showShop)}
-            className={`p-2 md:p-3 rounded-xl border font-bold shadow-lg flex items-center justify-center gap-2 backdrop-blur-md transition-all active:scale-95 h-10 md:h-auto ${showShop ? 'bg-indigo-600 text-white border-indigo-500' : 'bg-slate-900/80 text-indigo-300 border-indigo-500/50 hover:bg-slate-800'}`}
-        >
-            <BookOpen size={18} />
-            <span className="hidden md:inline text-sm">특수 상점</span>
+        <button onClick={onTogglePause} disabled={!isPlaying || isGameOver} className="bg-slate-900/80 hover:bg-slate-700 text-white p-2 md:p-3 rounded-xl border border-slate-700 font-bold shadow-lg flex items-center justify-center backdrop-blur-md h-10 md:h-auto disabled:opacity-30">
+            {isPaused ? <Play size={16} className="fill-white"/> : <Pause size={16} className="fill-white"/>}
         </button>
 
         {showShop && (
             <div className="absolute top-14 right-0 w-64 bg-slate-900/95 backdrop-blur-md border border-slate-700 rounded-2xl p-3 shadow-2xl flex flex-col gap-2 animate-fade-in-down">
-                <div className="text-sm font-bold text-slate-400 mb-1 px-1">특수 스킬 구매</div>
+                <div className="text-sm font-bold text-slate-400 mb-1 px-1">
+                    {selectedPlacedTower ? `${TOWER_STATS[selectedPlacedTower.tower.type].name}에 적용` : '특수 스킬 구매'}
+                </div>
+                {selectedPlacedTower && (
+                    <div className="text-[10px] text-indigo-300 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-2 py-1 mb-1">
+                        타워가 선택된 상태입니다. 스킬을 누르면 바로 적용됩니다.
+                    </div>
+                )}
                 {shopSkills.map(skill => {
                     const info = SKILL_INFO[skill]!;
                     const cost = SKILL_COSTS[skill];
                     const canAfford = money >= cost;
+                    const alreadyHas = selectedPlacedTower?.tower.skills.includes(skill);
+                    const wrongType = selectedPlacedTower && info.targetTypes && !info.targetTypes.includes(selectedPlacedTower.tower.type);
+                    const isDisabled = !canAfford || !!alreadyHas || !!wrongType;
                     return (
-                        <button 
+                        <button
                             key={skill}
-                            onClick={() => { onSelectSkill(skill); setShowShop(false); }}
-                            disabled={!canAfford}
-                            className={`flex flex-col text-left p-2 rounded-xl border transition-all ${canAfford ? 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-indigo-500' : 'bg-slate-800/50 border-slate-800 opacity-50 cursor-not-allowed'}`}
+                            onClick={() => {
+                                if (selectedPlacedTower) {
+                                    onApplySkillToSelected(skill);
+                                    setShowShop(false);
+                                } else {
+                                    onSelectSkill(skill);
+                                    setShowShop(false);
+                                }
+                            }}
+                            disabled={isDisabled}
+                            className={`flex flex-col text-left p-2 rounded-xl border transition-all ${isDisabled ? 'bg-slate-800/50 border-slate-800 opacity-50 cursor-not-allowed' : 'bg-slate-800 border-slate-700 hover:bg-slate-700 hover:border-indigo-500'}`}
                         >
                             <div className="flex justify-between items-center w-full">
                                 <span className="font-bold text-sm text-indigo-300">{info.name}</span>
-                                <span className={`text-xs font-bold ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}>{cost}G</span>
+                                <div className="flex items-center gap-2">
+                                    {alreadyHas && <span className="text-[10px] text-emerald-400 font-bold">적용됨</span>}
+                                    {wrongType && <span className="text-[10px] text-red-400 font-bold">불가</span>}
+                                    <span className={`text-xs font-bold ${canAfford && !alreadyHas ? 'text-yellow-400' : 'text-red-400'}`}>{cost}G</span>
+                                </div>
                             </div>
                             <span className="text-[10px] text-slate-400 mt-1">{info.desc}</span>
+                            {info.targetTypes && (
+                                <span className="text-[10px] text-slate-500 mt-0.5">대상: {info.targetTypes.map(t => TOWER_STATS[t].name).join(', ')}</span>
+                            )}
                         </button>
                     )
                 })}
@@ -271,8 +299,8 @@ const GameUI: React.FC<GameUIProps> = ({
         )}
       </div>
 
-      {/* Skill Application Overlay */}
-      {selectedSkill && (
+      {/* Skill Application Overlay (fallback: no tower selected) */}
+      {selectedSkill && !selectedPlacedTower && (
           <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-indigo-600 text-white px-6 py-3 rounded-full shadow-2xl z-50 flex items-center gap-4 animate-bounce pointer-events-auto">
               <div className="flex flex-col items-center">
                 <span className="font-bold text-sm">스킬 적용 모드</span>
@@ -286,7 +314,7 @@ const GameUI: React.FC<GameUIProps> = ({
       )}
 
       {/* Pan & Zoom Controls */}
-      <div className="absolute left-2 md:left-auto md:right-4 bottom-56 md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex flex-col items-center gap-0.5 md:gap-1 pointer-events-auto opacity-60 hover:opacity-100 z-40 transition-opacity">
+      <div className={`absolute left-2 md:left-auto md:right-4 md:top-1/2 md:-translate-y-1/2 md:bottom-auto flex flex-col items-center gap-0.5 md:gap-1 pointer-events-auto opacity-60 hover:opacity-100 z-40 transition-all duration-300 ${showMenu ? 'bottom-56' : 'bottom-4'}`}>
         <button onClick={() => onPan(0, 50)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowUp size={16} className="md:hidden" /><ArrowUp size={24} className="hidden md:block" /></button>
         <div className="flex gap-2 md:gap-4">
             <button onClick={() => onPan(50, 0)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowLeft size={16} className="md:hidden" /><ArrowLeft size={24} className="hidden md:block" /></button>
@@ -295,7 +323,7 @@ const GameUI: React.FC<GameUIProps> = ({
         <button onClick={() => onPan(0, -50)} className="p-1.5 md:p-3 bg-slate-800/80 rounded-full text-white border border-slate-600 hover:bg-slate-700 active:scale-95 shadow-lg"><ArrowDown size={16} className="md:hidden" /><ArrowDown size={24} className="hidden md:block" /></button>
       </div>
 
-      <div className="absolute right-2 md:right-4 bottom-56 md:bottom-36 flex flex-col gap-2 pointer-events-auto z-40">
+      <div className={`absolute right-2 md:right-4 flex flex-col gap-2 pointer-events-auto z-40 transition-all duration-300 ${showMenu ? 'bottom-56 md:bottom-36' : 'bottom-4 md:bottom-4'}`}>
         <div className="flex flex-col bg-slate-900/80 backdrop-blur-md rounded-xl border border-slate-700 overflow-hidden shadow-lg items-center w-9 md:w-12">
             <button onClick={onZoomIn} className="w-full p-1.5 md:p-3 hover:bg-slate-700 text-white border-b border-slate-600 active:bg-slate-600 flex items-center justify-center"><ZoomIn size={14} className="md:hidden" /><ZoomIn size={16} className="hidden md:block" /></button>
             <div className="w-full py-0.5 md:py-1 text-[9px] md:text-xs font-mono flex items-center justify-center text-slate-300 bg-slate-800/50">{Math.round(zoom * 100)}%</div>
@@ -332,11 +360,63 @@ const GameUI: React.FC<GameUIProps> = ({
 
       {/* Compact Next Wave Button */}
       {!isPlaying && !isGameOver && !isAutoStart && (
-        <div className="absolute bottom-56 md:bottom-32 left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40">
+        <div className={`absolute left-1/2 -translate-x-1/2 md:translate-x-0 md:left-auto md:right-20 pointer-events-auto z-40 transition-all duration-300 ${showMenu ? 'bottom-72 md:bottom-40' : 'bottom-12 md:bottom-8'}`}>
             <button onClick={onNextWave} className="group flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 md:px-5 md:py-3 rounded-full font-bold shadow-xl transition-all active:scale-95 border-2 border-emerald-400">
-                <span className="text-xs md:text-sm">다음 단계</span>
+                <span className="text-xs md:text-sm">시작하기!</span>
                 <ArrowRightCircle size={18} className="group-hover:translate-x-1 transition-transform" />
             </button>
+        </div>
+      )}
+
+      {/* Mobile Build Tooltip */}
+      {selectedTower && !selectedPlacedTower && showMenu && !hasPendingPlacement && (
+        <div className="md:hidden fixed bottom-[120px] left-2 right-2 z-[60] pointer-events-none animate-fade-in">
+          <div className="bg-slate-900/95 backdrop-blur-sm text-white p-3 rounded-xl border border-slate-600 shadow-2xl mx-auto max-w-xs">
+            {(() => {
+              const stat = TOWER_STATS[selectedTower];
+              const isSlow = [TowerType.SNIPER, TowerType.BOMBER, TowerType.TESLA].includes(selectedTower);
+              return (
+                <>
+                  <div className="flex items-center justify-between mb-2 border-b border-slate-700 pb-2">
+                    <h3 className="font-bold text-sm text-yellow-400">{stat.name}</h3>
+                    <span className="text-[10px] bg-slate-800 px-1.5 rounded border border-slate-700">Lv.1</span>
+                  </div>
+                  <div className="space-y-1 text-xs text-slate-300">
+                    {selectedTower === TowerType.SHIELD ? (
+                      <>
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-1"><Shield size={12}/> 내구도</span>
+                          <span className="font-mono font-bold text-emerald-400">{stat.health}</span>
+                        </div>
+                        <div className="mt-2 p-1.5 bg-blue-500/10 rounded border border-blue-500/20 text-[10px] text-blue-200 leading-tight">
+                          <ShieldCheck size={10} className="inline mr-1"/>주변 2.5칸 이내 타워를 보호합니다.
+                        </div>
+                      </>
+                    ) : selectedTower === TowerType.BASIC ? (
+                      <>
+                        <div className="flex justify-between items-center text-blue-300">
+                          <span className="flex items-center gap-1 font-bold"><ShieldCheck size={12}/> 끈끈이 효과</span>
+                        </div>
+                        <div className="text-[10px] text-slate-400 leading-tight">적의 이동속도를 50% 감소 (스플래시)</div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="flex justify-between"><span className="flex items-center gap-1"><Swords size={12}/> 공격력</span><span className="font-mono font-bold text-white">{stat.damage}</span></div>
+                        <div className="flex justify-between"><span className="flex items-center gap-1"><Zap size={12}/> 주기</span><span className="font-mono font-bold text-white">{(stat.cooldown / 1000).toFixed(2)}s</span></div>
+                        <div className="flex justify-between"><span className="flex items-center gap-1"><Crosshair size={12}/> 사거리</span><span className="font-mono font-bold text-white">{stat.range}</span></div>
+                        {isSlow && (
+                          <div className="mt-2 space-y-1 pt-2 border-t border-slate-700">
+                            <div className="text-[10px]"><span className="text-orange-400 font-bold"><Target size={10} className="inline mr-1"/>치명타 (20%)</span> <span className="text-slate-400">{selectedTower === TowerType.SNIPER ? '2배' : selectedTower === TowerType.BOMBER ? '3배 스플' : '5배 스플'}</span></div>
+                            <div className="text-[10px]"><span className="text-red-400 font-bold"><Flame size={10} className="inline mr-1"/>처형 (HP50%↓)</span> <span className="text-slate-400">{selectedTower === TowerType.SNIPER ? '40% 즉사/실패 3배' : selectedTower === TowerType.BOMBER ? '10배 스플' : '즉사'}</span></div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+          </div>
         </div>
       )}
 
@@ -376,7 +456,7 @@ const GameUI: React.FC<GameUIProps> = ({
                                 <div className="flex flex-col">
                                     <span className="text-[10px] text-slate-500 uppercase font-bold">범위</span>
                                     <span className="text-xs md:text-lg font-mono font-bold text-emerald-400">
-                                        주변 1칸
+                                        주변 2.5칸
                                     </span>
                                 </div>
                               </>
@@ -462,15 +542,16 @@ const GameUI: React.FC<GameUIProps> = ({
                         <button
                             key={type}
                             onClick={() => {
-                                if (canAfford) onSelectTower(isSelected ? null : type);
+                                onSelectTower(isSelected ? null : type);
                             }}
                             onMouseEnter={(e) => handleBuildEnter(type, e)}
                             onMouseLeave={() => setHoveredBuildType(null)}
-                            className={`relative flex flex-col items-center justify-center p-2 rounded-xl min-w-[80px] md:min-w-[110px] transition-all border-2 ${isSelected ? 'bg-blue-600/20 border-blue-500 -translate-y-2 shadow-2xl' : 'bg-slate-800 border-slate-700 hover:border-slate-500'} ${!canAfford ? 'opacity-40 grayscale cursor-default' : 'cursor-pointer'}`}
+                            className={`relative flex flex-col items-center justify-center p-2 rounded-xl min-w-[80px] md:min-w-[110px] transition-all border-2 ${isSelected ? 'bg-blue-600/20 border-blue-500 -translate-y-2 shadow-2xl' : 'bg-slate-800 border-slate-700 hover:border-slate-500'} cursor-pointer`}
                         >
                             <div className={`p-1.5 md:p-2 rounded-lg mb-1 ${isSelected ? 'scale-110' : ''}`} style={{ backgroundColor: stat.color }}>{renderTowerIcon(type, 18)}</div>
                             <span className="text-[10px] md:text-xs font-bold text-slate-200 truncate w-full text-center">{stat.name}</span>
                             <div className={`flex items-center text-[10px] md:text-xs font-bold mt-0.5 ${canAfford ? 'text-yellow-400' : 'text-red-400'}`}><Coins size={10} className="mr-0.5" /> {cost}</div>
+                            {!canAfford && <div className="absolute inset-0 bg-black/40 rounded-xl flex items-center justify-center"><span className="text-[9px] text-red-300 font-bold">금액 부족</span></div>}
                         </button>
                         );
                     })}

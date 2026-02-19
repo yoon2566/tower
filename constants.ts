@@ -20,7 +20,7 @@ export const UPGRADE_COST_MULTIPLIER = 1.5;
 
 export const SKILL_COSTS: Record<TowerSkill, number> = {
   [TowerSkill.STICKY]: 9999, // 상점에서 삭제됨
-  [TowerSkill.CHAINSAW]: 500,
+  [TowerSkill.CHAINSAW]: 400, // 500 → 400 (확률 하향 보상)
   [TowerSkill.AUTO_REPAIR]: 300,
 };
 
@@ -28,7 +28,7 @@ export const SKILL_COSTS: Record<TowerSkill, number> = {
 export const SKILL_INFO: Partial<Record<TowerSkill, { name: string; desc: string; targetTypes?: TowerType[] }>> = {
   [TowerSkill.CHAINSAW]: { 
     name: '즉사 전기톱', 
-    desc: '5% 확률로 적 즉사',
+    desc: '3% 확률로 적 즉사',
     targetTypes: [TowerType.RAPID, TowerType.LASER]
   },
   [TowerSkill.AUTO_REPAIR]: { 
@@ -52,9 +52,9 @@ export const TOWER_STATS: Record<TowerType, {
   [TowerType.BASIC]: { range: 4.5, damage: 0, cooldown: 800, color: '#3b82f6', name: '끈끈이 포탑', health: 600, splashRadius: 2.0 },
   [TowerType.SNIPER]: { range: 10.0, damage: 160, cooldown: 2200, color: '#ef4444', name: '레일건 스나이퍼', health: 300 }, 
   [TowerType.RAPID]: { range: 3.5, damage: 20, cooldown: 180, color: '#eab308', name: '초고속 연사포', health: 400 }, 
-  [TowerType.BOMBER]: { range: 5.0, damage: 80, cooldown: 1600, color: '#d946ef', name: '중화력 폭격기', splashRadius: 3.0, health: 600 },
-  [TowerType.SHIELD]: { range: 1.8, damage: 0, cooldown: 0, color: '#64748b', name: '수호 방패', health: 5000 }, 
-  [TowerType.LASER]: { range: 6.0, damage: 450, cooldown: 150, color: '#06b6d4', name: '공간 절단 레이저', health: 450 }, // DPS 대폭 상향
+  [TowerType.BOMBER]: { range: 5.0, damage: 120, cooldown: 1200, color: '#d946ef', name: '중화력 폭격기', splashRadius: 3.0, health: 600 }, // DPS 100 (상향)
+  [TowerType.SHIELD]: { range: 2.5, damage: 0, cooldown: 0, color: '#64748b', name: '수호 방패', health: 3500 }, // HP 5000→3500, 범위 1.8→2.5
+  [TowerType.LASER]: { range: 6.0, damage: 120, cooldown: 250, color: '#06b6d4', name: '공간 절단 레이저', health: 450 }, // DPS 480 (너프)
   [TowerType.TESLA]: { range: 6.5, damage: 350, cooldown: 1100, color: '#8b5cf6', name: '테슬라 캐논', splashRadius: 5.5, health: 800 },
 };
 

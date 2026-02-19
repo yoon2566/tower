@@ -35,9 +35,88 @@ const GameCanvas: React.FC = () => {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [hoveredTowerInfo, setHoveredTowerInfo] = useState<{ tower: Tower, x: number, y: number } | null>(null);
   const [selectedPlacedTower, setSelectedPlacedTower] = useState<{ tower: Tower, x: number, y: number } | null>(null);
-  const [skillTargetTower, setSkillTargetTower] = useState<Tower | null>(null); 
+  const [skillTargetTower, setSkillTargetTower] = useState<Tower | null>(null);
+  const [pendingPlacement, setPendingPlacement] = useState<{ gridX: number, gridY: number } | null>(null);
 
   const mouseRef = useRef({ x: 0, y: 0, gridX: -1, gridY: -1, rawX: 0, rawY: 0 });
+  const touchRef = useRef<{ lastDist: number; lastMidX: number; lastMidY: number; isTwoFinger: boolean; startX: number; startY: number; lastX: number; lastY: number; isDragging: boolean }>({ lastDist: 0, lastMidX: 0, lastMidY: 0, isTwoFinger: false, startX: 0, startY: 0, lastX: 0, lastY: 0, isDragging: false });
+
+  // Touch: pinch zoom, two-finger pan, single-finger drag pan
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const getTouchDist = (t1: Touch, t2: Touch) =>
+      Math.sqrt((t1.clientX - t2.clientX) ** 2 + (t1.clientY - t2.clientY) ** 2);
+
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const t1 = e.touches[0], t2 = e.touches[1];
+        touchRef.current.lastDist = getTouchDist(t1, t2);
+        touchRef.current.lastMidX = (t1.clientX + t2.clientX) / 2;
+        touchRef.current.lastMidY = (t1.clientY + t2.clientY) / 2;
+        touchRef.current.isTwoFinger = true;
+        touchRef.current.isDragging = false;
+      } else if (e.touches.length === 1) {
+        const t = e.touches[0];
+        touchRef.current.startX = t.clientX;
+        touchRef.current.startY = t.clientY;
+        touchRef.current.lastX = t.clientX;
+        touchRef.current.lastY = t.clientY;
+        touchRef.current.isDragging = false;
+      }
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2 && touchRef.current.isTwoFinger) {
+        e.preventDefault();
+        const t1 = e.touches[0], t2 = e.touches[1];
+        const dist = getTouchDist(t1, t2);
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+
+        const scale = dist / touchRef.current.lastDist;
+        setZoom(z => Math.min(2, Math.max(0.4, z * scale)));
+
+        const dx = midX - touchRef.current.lastMidX;
+        const dy = midY - touchRef.current.lastMidY;
+        setPan(p => ({ x: p.x + dx, y: p.y + dy }));
+
+        touchRef.current.lastDist = dist;
+        touchRef.current.lastMidX = midX;
+        touchRef.current.lastMidY = midY;
+      } else if (e.touches.length === 1 && !touchRef.current.isTwoFinger) {
+        const t = e.touches[0];
+        const movedX = Math.abs(t.clientX - touchRef.current.startX);
+        const movedY = Math.abs(t.clientY - touchRef.current.startY);
+        if (movedX > 8 || movedY > 8) {
+          e.preventDefault();
+          touchRef.current.isDragging = true;
+          const dx = t.clientX - touchRef.current.lastX;
+          const dy = t.clientY - touchRef.current.lastY;
+          setPan(p => ({ x: p.x + dx, y: p.y + dy }));
+        }
+        touchRef.current.lastX = t.clientX;
+        touchRef.current.lastY = t.clientY;
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (e.touches.length < 2) {
+        touchRef.current.isTwoFinger = false;
+      }
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
@@ -145,20 +224,73 @@ const GameCanvas: React.FC = () => {
       if (!skillTargetTower || !selectedSkill) return;
       const t = towersRef.current.find(tower => tower.id === skillTargetTower.id);
       if (!t) return;
+      if (t.skills.includes(selectedSkill)) return; // 중복 방지
 
       const cost = SKILL_COSTS[selectedSkill];
       if (gameStateRef.current.money >= cost) {
           gameStateRef.current.money -= cost;
-          if (!t.skills.includes(selectedSkill)) {
-              t.skills.push(selectedSkill);
-          }
+          t.skills.push(selectedSkill);
           createParticles(t.x, t.y, '#a855f7', 40);
           setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
-          
+
           setSkillTargetTower(null);
           setSelectedSkill(null);
       }
   };
+
+  const applySkillToSelected = (skill: TowerSkill) => {
+      if (!selectedPlacedTower) return;
+      const t = towersRef.current.find(tower => tower.id === selectedPlacedTower.tower.id);
+      if (!t) return;
+      if (t.skills.includes(skill)) return; // 중복 방지
+
+      const info = SKILL_INFO[skill];
+      if (info?.targetTypes && !info.targetTypes.includes(t.type)) return;
+
+      const cost = SKILL_COSTS[skill];
+      if (gameStateRef.current.money >= cost) {
+          gameStateRef.current.money -= cost;
+          t.skills.push(skill);
+          createParticles(t.x, t.y, '#a855f7', 40);
+          setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
+
+          const pos = getScreenPos(t.x, t.y);
+          setSelectedPlacedTower({ tower: { ...t }, x: pos.x, y: pos.y });
+      }
+  };
+
+  const confirmPlacement = useCallback(() => {
+      if (!selectedTower || !pendingPlacement) return;
+      const { gridX, gridY } = pendingPlacement;
+      const cost = TOWER_COSTS[selectedTower];
+      if (gameStateRef.current.money >= cost && !isOnPath(gridX, gridY) && !towersRef.current.some(t => t.x === gridX && t.y === gridY)) {
+          gameStateRef.current.money -= cost;
+          const stats = TOWER_STATS[selectedTower];
+          towersRef.current.push({
+              id: Math.random().toString(),
+              x: gridX, y: gridY,
+              type: selectedTower,
+              range: stats.range,
+              damage: stats.damage,
+              cooldown: stats.cooldown,
+              lastShotTime: 0,
+              level: 1,
+              health: stats.health,
+              maxHealth: stats.health,
+              totalEarned: selectedTower === TowerType.SHIELD ? 0 : undefined,
+              skills: []
+          });
+          setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
+          setPendingPlacement(null);
+          if (gameStateRef.current.money < cost) {
+              setSelectedTower(null);
+          }
+      }
+  }, [selectedTower, pendingPlacement]);
+
+  const cancelPlacement = useCallback(() => {
+      setPendingPlacement(null);
+  }, []);
 
   const getWorldPos = (gx: number, gy: number) => {
     const offsetX = window.innerWidth / 2;
@@ -242,11 +374,11 @@ const GameCanvas: React.FC = () => {
             const dist = Math.sqrt((enemy.x - tower.x) ** 2 + (enemy.y - tower.y) ** 2);
             if (dist < 1.8) { 
                 // Shield check: Check if any ACTIVE Shield tower is nearby (range 1.8 approx for 1 tile diagonal)
-                const isProtected = towersRef.current.some(t => 
-                    t.type === TowerType.SHIELD && 
-                    !t.isBroken && 
+                const isProtected = towersRef.current.some(t =>
+                    t.type === TowerType.SHIELD &&
+                    !t.isBroken &&
                     t.id !== tower.id && // Shield can't protect itself from damage (it has high HP instead)
-                    Math.sqrt((t.x - tower.x)**2 + (t.y - tower.y)**2) <= 1.8
+                    Math.sqrt((t.x - tower.x)**2 + (t.y - tower.y)**2) <= 2.5
                 );
 
                 if (!isProtected || tower.type === TowerType.SHIELD) {
@@ -339,14 +471,14 @@ const GameCanvas: React.FC = () => {
                 if (SLOW_TOWERS.includes(tower.type)) {
                     const hpPercent = target.health / target.maxHealth;
 
-                    // Sniper Update: 80% Instant Death if < 50%, 20% Crit otherwise
+                    // Sniper Update: 40% Instant Death if < 50%, 20% Crit otherwise
                     if (tower.type === TowerType.SNIPER) {
                         if (hpPercent < 0.5) {
-                             if (Math.random() < 0.8) {
-                                effectType = 'instant_death'; // 80% Execute
+                             if (Math.random() < 0.4) {
+                                effectType = 'instant_death'; // 40% Execute
                                 damage = 999999;
                              } else {
-                                damage *= 1.5; // Failed execute dmg
+                                damage *= 3.0; // Failed execute dmg (3배)
                              }
                         } else if (Math.random() < 0.2) {
                             effectType = 'crit';
@@ -359,17 +491,17 @@ const GameCanvas: React.FC = () => {
                              damage *= 10.0; // Splash execute
                         } else if (Math.random() < 0.25) {
                              effectType = 'crit';
-                             damage *= 5.0;
+                             damage *= 3.0; // 5배 → 3배 조정
                         }
                     } 
                     else if (tower.type === TowerType.TESLA) {
                         if (hpPercent < 0.5) {
-                             damage = 999999; 
+                             damage = 999999;
                              effectType = 'instant_death';
-                             splashRadius = 0; 
+                             splashRadius = 0;
                         } else if (Math.random() < 0.25) {
                              effectType = 'crit';
-                             damage *= 10.0;
+                             damage *= 5.0; // 10배 → 5배 너프
                         }
                     }
                 }
@@ -424,7 +556,7 @@ const GameCanvas: React.FC = () => {
                     e.frozen = 120;
                 }
 
-                if (proj.hasChainsaw && Math.random() < 0.05) {
+                if (proj.hasChainsaw && Math.random() < 0.03) { // 5% → 3%
                     e.health = 0;
                     createParticles(e.x, e.y, '#ef4444', 50, '💀');
                 }
@@ -466,6 +598,39 @@ const GameCanvas: React.FC = () => {
             drawIsoTile(ctx, pos.x, pos.y, isOnPath(x, y) ? '#475569' : '#059669', mouseRef.current.gridX === x && mouseRef.current.gridY === y); 
         }
       }
+
+      // Shield tower connection lines
+      const shieldRange = TOWER_STATS[TowerType.SHIELD].range;
+      towersRef.current.forEach(st => {
+        if (st.type !== TowerType.SHIELD || st.isBroken) return;
+        const sPos = toIso(st.x, st.y);
+        const sH = 45 + (st.level * 6);
+        towersRef.current.forEach(pt => {
+          if (pt.id === st.id || pt.isBroken) return;
+          const dist = Math.sqrt((st.x - pt.x) ** 2 + (st.y - pt.y) ** 2);
+          if (dist > shieldRange) return;
+          const pPos = toIso(pt.x, pt.y);
+          const pH = 45 + (pt.level * 6);
+          const pulse = 0.3 + 0.15 * Math.sin(Date.now() / 600 + st.x * 3 + pt.y * 5);
+          ctx.save();
+          ctx.beginPath();
+          ctx.moveTo(sPos.x, sPos.y - sH / 2);
+          ctx.lineTo(pPos.x, pPos.y - pH / 2);
+          ctx.strokeStyle = `rgba(148, 163, 184, ${pulse})`;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([8, 6]);
+          ctx.stroke();
+          // glow
+          ctx.beginPath();
+          ctx.moveTo(sPos.x, sPos.y - sH / 2);
+          ctx.lineTo(pPos.x, pPos.y - pH / 2);
+          ctx.strokeStyle = `rgba(148, 163, 184, ${pulse * 0.5})`;
+          ctx.lineWidth = 6;
+          ctx.setLineDash([8, 6]);
+          ctx.stroke();
+          ctx.restore();
+        });
+      });
 
       const renderables: any[] = [];
       towersRef.current.forEach(t => renderables.push({ type: 'TOWER', z: t.x + t.y, obj: t }));
@@ -530,13 +695,30 @@ const GameCanvas: React.FC = () => {
           ctx.globalAlpha = 1.0;
       });
 
-      // Building Preview
-      if (selectedTower && mouseRef.current.gridX >= 0 && mouseRef.current.gridX < MAP_SIZE && mouseRef.current.gridY >= 0 && mouseRef.current.gridY < MAP_SIZE) {
+      // Pending Placement Preview (confirmed position)
+      if (selectedTower && pendingPlacement) {
+         const gx = pendingPlacement.gridX; const gy = pendingPlacement.gridY;
+         const pos = toIso(gx, gy);
+         ctx.globalAlpha = 0.8;
+         drawTower(ctx, pos.x, pos.y, { type: selectedTower, level: 1, health: 100, maxHealth: 100, skills: [] } as any);
+         ctx.globalAlpha = 1.0;
+         // Range circle
+         ctx.beginPath();
+         const range = TOWER_STATS[selectedTower].range;
+         ctx.ellipse(pos.x, pos.y, range * TILE_WIDTH/1.5, range * TILE_HEIGHT/1.5, 0, 0, Math.PI*2);
+         ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+         ctx.fill();
+         ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+         ctx.lineWidth = 2;
+         ctx.stroke();
+      }
+      // Mouse hover preview (when no pending placement)
+      else if (selectedTower && !pendingPlacement && mouseRef.current.gridX >= 0 && mouseRef.current.gridX < MAP_SIZE && mouseRef.current.gridY >= 0 && mouseRef.current.gridY < MAP_SIZE) {
          const gx = mouseRef.current.gridX; const gy = mouseRef.current.gridY;
          const isValid = !towersRef.current.some(t => t.x === gx && t.y === gy) && !isOnPath(gx, gy);
          const pos = toIso(gx, gy);
-         ctx.globalAlpha = 0.5;
-         drawTower(ctx, pos.x, pos.y, { type: selectedTower, level: 1, health: 100, maxHealth: 100, skills: [] } as any); 
+         ctx.globalAlpha = 0.4;
+         drawTower(ctx, pos.x, pos.y, { type: selectedTower, level: 1, health: 100, maxHealth: 100, skills: [] } as any);
          ctx.beginPath();
          const range = TOWER_STATS[selectedTower].range;
          ctx.ellipse(pos.x, pos.y, range * TILE_WIDTH/1.5, range * TILE_HEIGHT/1.5, 0, 0, Math.PI*2);
@@ -677,7 +859,7 @@ const GameCanvas: React.FC = () => {
 
     animationFrameId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animationFrameId);
-  }, [selectedTower, zoom, pan, selectedPlacedTower, skillTargetTower, selectedSkill]);
+  }, [selectedTower, zoom, pan, selectedPlacedTower, skillTargetTower, selectedSkill, pendingPlacement]);
 
   const calculateGridPos = (clientX: number, clientY: number) => {
      const rect = canvasRef.current?.getBoundingClientRect();
@@ -730,34 +912,19 @@ const GameCanvas: React.FC = () => {
         const isValidTile = gridX >= 0 && gridX < MAP_SIZE && gridY >= 0 && gridY < MAP_SIZE;
         if (gameStateRef.current.money < TOWER_COSTS[selectedTower]) {
             setSelectedTower(null);
+            setPendingPlacement(null);
             return;
         }
 
         if (isValidTile && !isOnPath(gridX, gridY) && !towersRef.current.some(t => t.x === gridX && t.y === gridY)) {
-            const cost = TOWER_COSTS[selectedTower];
-            if (gameStateRef.current.money >= cost) {
-                gameStateRef.current.money -= cost;
-                const stats = TOWER_STATS[selectedTower];
-                towersRef.current.push({
-                    id: Math.random().toString(),
-                    x: gridX, y: gridY,
-                    type: selectedTower,
-                    range: stats.range,
-                    damage: stats.damage,
-                    cooldown: stats.cooldown,
-                    lastShotTime: 0,
-                    level: 1,
-                    health: stats.health,
-                    maxHealth: stats.health,
-                    totalEarned: selectedTower === TowerType.SHIELD ? 0 : undefined,
-                    skills: []
-                });
-                setUiState(prev => ({ ...prev, money: gameStateRef.current.money }));
-                
-                if (gameStateRef.current.money < cost) {
-                    setSelectedTower(null);
-                }
+            // 2-step: first click sets pending, second click on same tile confirms
+            if (pendingPlacement && pendingPlacement.gridX === gridX && pendingPlacement.gridY === gridY) {
+                confirmPlacement();
+            } else {
+                setPendingPlacement({ gridX, gridY });
             }
+        } else {
+            setPendingPlacement(null);
         }
         return;
      }
@@ -798,17 +965,17 @@ const GameCanvas: React.FC = () => {
       const start = GAME_PATH[0];
       const wave = gameStateRef.current.wave;
       
-      let hp = 110 * Math.pow(1.25, wave - 1); 
+      let hp = 110 * Math.pow(1.18, wave - 1); // 1.25 → 1.18 완화
       let speed = 0.025 + Math.min(0.155, (wave * 0.002) + Math.log(wave) * 0.005);
-      
-      let color = '#f97316'; 
-      let reward = Math.floor(12 + (wave * 1.5)); 
-      
-      if (wave % 5 === 0) { 
-          hp *= 5.0; 
-          speed *= 0.6; 
-          color = '#a855f7'; 
-          reward *= 5; 
+
+      let color = '#f97316';
+      let reward = Math.floor(15 + (wave * 2)); // 보상 상향: 12+(w*1.5) → 15+(w*2)
+
+      if (wave % 5 === 0) {
+          hp *= 4.0; // 보스 HP 5배 → 4배
+          speed *= 0.6;
+          color = '#a855f7';
+          reward *= 5;
       }
       
       enemiesRef.current.push({
@@ -837,15 +1004,49 @@ const GameCanvas: React.FC = () => {
 
   return (
     <div className="relative w-full h-screen bg-white overflow-hidden touch-none">
-      <canvas 
+      <canvas
         ref={canvasRef} width={window.innerWidth} height={window.innerHeight}
         onMouseMove={(e) => { const p = calculateGridPos(e.clientX, e.clientY); mouseRef.current = p; }}
-        onClick={handleCanvasClick} className="cursor-crosshair touch-none"
+        onClick={handleCanvasClick}
+        onTouchEnd={(e) => {
+          if (touchRef.current.isTwoFinger) return;
+          if (touchRef.current.isDragging) { touchRef.current.isDragging = false; return; }
+          if (e.changedTouches.length === 1) {
+            e.preventDefault();
+            const t = e.changedTouches[0];
+            const p = calculateGridPos(t.clientX, t.clientY);
+            mouseRef.current = p;
+            handleCanvasClick();
+          }
+        }}
+        className="cursor-crosshair touch-none"
       />
+      {/* Confirm/Cancel placement buttons */}
+      {selectedTower && pendingPlacement && (() => {
+          const sp = getScreenPos(pendingPlacement.gridX, pendingPlacement.gridY);
+          return (
+            <div className="absolute z-[70] pointer-events-auto flex gap-3" style={{ left: sp.x, top: sp.y - 70 * zoom, transform: 'translate(-50%, -50%)', touchAction: 'auto' }}>
+              <button
+                onClick={(e) => { e.stopPropagation(); confirmPlacement(); }}
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); confirmPlacement(); }}
+                className="w-12 h-12 rounded-full bg-emerald-500 hover:bg-emerald-400 text-white shadow-lg border-2 border-emerald-300 flex items-center justify-center active:scale-90 transition-all animate-bounce"
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); cancelPlacement(); }}
+                onTouchEnd={(e) => { e.preventDefault(); e.stopPropagation(); cancelPlacement(); }}
+                className="w-12 h-12 rounded-full bg-slate-700 hover:bg-slate-600 text-slate-300 shadow-lg border-2 border-slate-500 flex items-center justify-center active:scale-90 transition-all"
+              >
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+          );
+      })()}
       <GameUI 
         money={uiState.money} lives={uiState.lives} wave={uiState.wave}
         isPlaying={uiState.isPlaying} isPaused={uiState.isPaused} isGameOver={uiState.isGameOver}
-        selectedTower={selectedTower} onSelectTower={setSelectedTower}
+        selectedTower={selectedTower} onSelectTower={(t) => { setSelectedTower(t); setPendingPlacement(null); }}
         onNextWave={startWave} onRestart={() => window.location.reload()}
         onTogglePause={() => { gameStateRef.current.isPaused = !gameStateRef.current.isPaused; setUiState({...gameStateRef.current}); }}
         hoveredTowerInfo={hoveredTowerInfo} gameSpeed={uiState.gameSpeed}
@@ -863,15 +1064,18 @@ const GameCanvas: React.FC = () => {
         isAutoStart={uiState.isAutoStart}
         onToggleAutoStart={toggleAutoStart}
         selectedSkill={selectedSkill}
-        onSelectSkill={(skill) => { 
-            setSelectedSkill(skill); 
-            setSelectedTower(null); 
-            setSelectedPlacedTower(null); 
-            setSkillTargetTower(null); 
+        onSelectSkill={(skill) => {
+            setSelectedSkill(skill);
+            setSelectedTower(null);
+            setSelectedPlacedTower(null);
+            setSkillTargetTower(null);
+            setPendingPlacement(null);
         }}
         skillTargetTower={skillTargetTower}
         onApplySkill={applySkill}
         onCancelSkill={() => { setSelectedSkill(null); setSkillTargetTower(null); }}
+        onApplySkillToSelected={applySkillToSelected}
+        hasPendingPlacement={!!pendingPlacement}
       />
     </div>
   );
