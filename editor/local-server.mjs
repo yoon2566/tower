@@ -1,0 +1,4 @@
+import http from 'node:http';
+import fs from 'node:fs/promises';
+import {onRequestPost} from '../functions/api/edit.js';
+http.createServer(async(req,res)=>{try{const path=new URL(req.url,'http://localhost').pathname;if(path==='/api/edit'){const chunks=[];for await(const c of req)chunks.push(c);const request=new Request('http://127.0.0.1:8800/api/edit',{method:'POST',headers:req.headers,body:Buffer.concat(chunks)});const response=await onRequestPost({request,env:{OPENROUTER_API_KEY:process.env.OPENROUTER_API_KEY}});res.writeHead(response.status,Object.fromEntries(response.headers));res.end(await response.text());}else{const file=path==='/game.html'?'game.html':'index.html';res.setHeader('Content-Type','text/html; charset=utf-8');res.end(await fs.readFile('dist/'+file));}}catch{res.writeHead(500);res.end('Local server error');}}).listen(8800,'127.0.0.1',()=>console.log('Local verification server: http://127.0.0.1:8800'));
