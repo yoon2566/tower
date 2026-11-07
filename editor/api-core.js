@@ -17,7 +17,7 @@ export async function edit({request,env},emit){
     let total=0;
     for(let attempt=0;attempt<2;attempt++){
       if(attempt)emit?.({type:'status',message:'수정 내용을 다시 검토하고 있어요…'});
-      const response=await fetch('https://openrouter.ai/api/v1/messages',{method:'POST',headers:{Authorization:'Bearer '+env.OPENROUTER_API_KEY,'Content-Type':'application/json','HTTP-Referer':new URL(request.url).origin,'X-Title':'Tower Defense Editor'},body:JSON.stringify({model:'anthropic/claude-haiku-5.5',max_tokens:32000,stream:Boolean(emit),thinking:{type:'disabled'},output_config:{effort:'high'},system,messages}),signal:AbortSignal.timeout(180000)});
+      const response=await fetch('https://openrouter.ai/api/v1/messages',{method:'POST',headers:{Authorization:'Bearer '+env.OPENROUTER_API_KEY,'Content-Type':'application/json','HTTP-Referer':new URL(request.url).origin,'X-Title':'Tower Defense Editor'},body:JSON.stringify({model:'anthropic/claude-haiku-5.5',max_tokens:128000,stream:Boolean(emit),thinking:{type:'disabled'},output_config:{effort:'high'},system,messages}),signal:AbortSignal.timeout(1200000)});
       if(!response.ok)return reply({error:response.status===429?'AI 요청이 많습니다. 잠시 후 다시 시도해주세요.':`AI 연결 실패 (${response.status}). 잠시 후 다시 시도해주세요.`},502);
       let last=0;
       const result=emit?await readModelStream(response.body,n=>{last=n;emit({type:'progress',characters:total+n});}):await response.json();total+=last;
