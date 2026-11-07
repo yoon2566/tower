@@ -75,8 +75,8 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                         공격력은 없지만 적의 이동속도를 50% 감소시킵니다. (스플래시)
                     </div>
                      <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1"><Zap size={12}/> 주기</span>
-                        <span className="font-mono font-bold text-white">{(stat.cooldown / 1000).toFixed(2)}s</span>
+                        <span className="flex items-center gap-1"><Zap size={12}/> 공격속도</span>
+                        <span className="font-mono font-bold text-white">{(1000 / stat.cooldown).toFixed(2)}/s</span>
                     </div>
                    </>
                 ) : (
@@ -86,8 +86,8 @@ const TowerTooltip = ({ type, x, y, isBottom = false }: { type: TowerType, x: nu
                         <span className="font-mono font-bold text-white">{stat.damage}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                        <span className="flex items-center gap-1"><Zap size={12}/> 주기</span>
-                        <span className="font-mono font-bold text-white">{(stat.cooldown / 1000).toFixed(2)}s</span>
+                        <span className="flex items-center gap-1"><Zap size={12}/> 공격속도</span>
+                        <span className="font-mono font-bold text-white">{(1000 / stat.cooldown).toFixed(2)}/s</span>
                     </div>
                     <div className="flex justify-between items-center">
                         <span className="flex items-center gap-1"><Crosshair size={12}/> 사거리</span>
@@ -402,7 +402,7 @@ const GameUI: React.FC<GameUIProps> = ({
                     ) : (
                       <>
                         <div className="flex justify-between"><span className="flex items-center gap-1"><Swords size={12}/> 공격력</span><span className="font-mono font-bold text-white">{stat.damage}</span></div>
-                        <div className="flex justify-between"><span className="flex items-center gap-1"><Zap size={12}/> 주기</span><span className="font-mono font-bold text-white">{(stat.cooldown / 1000).toFixed(2)}s</span></div>
+                        <div className="flex justify-between"><span className="flex items-center gap-1"><Zap size={12}/> 공격속도</span><span className="font-mono font-bold text-white">{(1000 / stat.cooldown).toFixed(2)}/s</span></div>
                         <div className="flex justify-between"><span className="flex items-center gap-1"><Crosshair size={12}/> 사거리</span><span className="font-mono font-bold text-white">{stat.range}</span></div>
                         {isSlow && (
                           <div className="mt-2 space-y-1 pt-2 border-t border-slate-700">
@@ -479,11 +479,11 @@ const GameUI: React.FC<GameUIProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex flex-col hidden md:flex">
-                                    <span className="text-[10px] text-slate-500 uppercase font-bold">공격 주기</span>
+                                    <span className="text-[10px] text-slate-500 uppercase font-bold">공격속도</span>
                                     <div className="flex items-center gap-1.5">
-                                        <span className="text-xs md:text-lg font-mono font-bold text-white">{(selectedPlacedTower.tower.cooldown / 1000).toFixed(2)}s</span>
+                                        <span className="text-xs md:text-lg font-mono font-bold text-white">{(1000 / selectedPlacedTower.tower.cooldown).toFixed(2)}/s</span>
                                         <ArrowRightCircle size={14} className="text-slate-600"/>
-                                        <span className="text-xs md:text-lg font-mono font-bold text-emerald-400">{((getNextStats(selectedPlacedTower.tower) as any).cooldown / 1000).toFixed(2)}s</span>
+                                        <span className="text-xs md:text-lg font-mono font-bold text-emerald-400">{(1000 / (getNextStats(selectedPlacedTower.tower) as any).cooldown).toFixed(2)}/s</span>
                                     </div>
                                 </div>
                               </>

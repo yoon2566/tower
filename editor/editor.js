@@ -6,10 +6,20 @@ async function readEdit(response){
   finally{await reader.cancel().catch(()=>{});reader.releaseLock();}
   if(!result)throw Error('AI 연결이 중단되었습니다. 다시 시도해주세요.');return result;
 }
+function updateAttackLabels(s){
+  const key='components/GameUI.tsx';
+  if(typeof s?.[key]==='string')s[key]=s[key]
+    .replaceAll('공격 주기</span>','공격속도</span>')
+    .replaceAll(' 주기</span>',' 공격속도</span>')
+    .replaceAll('(stat.cooldown / 1000).toFixed(2)}s','(1000 / stat.cooldown).toFixed(2)}/s')
+    .replaceAll('(selectedPlacedTower.tower.cooldown / 1000).toFixed(2)}s','(1000 / selectedPlacedTower.tower.cooldown).toFixed(2)}/s')
+    .replaceAll('((getNextStats(selectedPlacedTower.tower) as any).cooldown / 1000).toFixed(2)}s','(1000 / (getNextStats(selectedPlacedTower.tower) as any).cooldown).toFixed(2)}/s');
+  return s;
+}
 const $=id=>document.getElementById(id), KEY='tower-editor-v1';
 let template='', original, current, history=[], busy=false;
 const parse=html=>{const doc=new DOMParser().parseFromString(html,'text/html');const node=doc.getElementById('game-source');if(!node)throw Error('이 편집기에서 다운로드한 HTML을 선택해주세요.');return JSON.parse(node.textContent);};
-function validate(s){if(!s||typeof s!=='object'||Array.isArray(s)||Object.keys(s).some(k=>!Object.hasOwn(original,k)||typeof s[k]!=='string')||Object.keys(original).some(k=>!Object.hasOwn(s,k))||JSON.stringify(s).length>500000)throw Error('게임 파일 형식 또는 크기가 올바르지 않습니다.');}
+function validate(s){if(!s||typeof s!=='object'||Array.isArray(s)||Object.keys(s).some(k=>!Object.hasOwn(original,k)||typeof s[k]!=='string')||Object.keys(original).some(k=>!Object.hasOwn(s,k))||JSON.stringify(s).length>500000)throw Error('게임 파일 형식 또는 크기가 올바르지 않습니다.');updateAttackLabels(s);}
 function html(s){return template.replace(/(<script id="game-source" type="application\/json">)[\s\S]*?(<\/script>)/,(_,a,b)=>a+JSON.stringify(s).replace(/</g,'\\u003c')+b);}
 function message(text,user=false){const el=document.createElement('div');el.className='message'+(user?' user':'');el.textContent=text;$('chat').append(el);$('chat').scrollTop=$('chat').scrollHeight;}
 function toast(text){$('toast').textContent=text;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',5000);}
