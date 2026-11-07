@@ -21,6 +21,7 @@ const counts=await page.evaluate(()=>window.progressCounts);if(!counts.some(n=>n
 if(!stored['constants.ts'].includes('2345'))throw Error('AI change was not saved');
 await page.screenshot({path:'test-results/editor-modified.png'});
 await page.reload();await page.frameLocator('#game').locator('canvas').waitFor({timeout:45000});
+await page.locator('#edit').click();await page.locator('#restore').click();await page.waitForFunction(()=>!document.getElementById('restore').disabled);await page.locator('#close').click();
 const downloadWait=page.waitForEvent('download');await page.locator('#download').click();const download=await downloadWait;
 await download.saveAs('test-results/downloaded-game.html');
 const offline=await browser.newContext({offline:true,viewport:{width:1440,height:1000}});const game=await offline.newPage();
